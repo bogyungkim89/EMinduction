@@ -161,10 +161,6 @@ def get_scene_html(motion, pole, animate=True):
         elif st.session_state.quiz2_choice == 'S':
              s_button_style += " box-shadow: 0 0 0 3px #0000ff; background-color: #aaaaff;"
              
-        # 퀴즈 2 버튼은 Streamlit 네이티브 버튼을 사용하도록 퀴즈 2 단계에서 재정의되었으므로,
-        # HTML/CSS 버튼을 사용하지 않기 위해 이 퀴즈2_buttons_html은 비워두는 것이 더 깔끔하지만,
-        # 이전 코드의 흔적이 남아있으므로 HTML/JS 기반 버튼을 다시 활성화하여 사용하겠습니다.
-        # 단, 이 버튼은 HTML/JS 트릭을 사용하므로, 퀴즈 2 단계에서 네이티브 버튼을 제거합니다.
         
         quiz2_buttons_html = f"""
             <div id="quiz2-choice-buttons" style="position: absolute; width: 300px; height: 160px; pointer-events: none;">
@@ -211,7 +207,7 @@ def get_scene_html(motion, pole, animate=True):
       </div>
 
       <svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
-        {/* 타원형 고리 */}
+        {/* 타원형 고리 주석 제거 */}
         <ellipse cx="{ring_center_x}" cy="{ring_center_y}" rx="{ring_radius_x}" ry="{ring_radius_y}" 
                  fill="none" stroke="{ring_color}" stroke-width="{ring_stroke_width}"/>
       </svg>
@@ -269,9 +265,9 @@ def handle_quiz3_choice_and_check(chosen_chevron):
         top_pole = "S" if scenario["pole"] == "N" else "N"
         
     if top_pole == "N":
-        correct_chevron = '<' # 반시계방향
+        correct_chevron = '<' # 반시계방향 (고리 앞쪽 도선이 왼쪽으로 흐름)
     else: # top_pole == "S"
-        correct_chevron = '>' # 시계방향
+        correct_chevron = '>' # 시계방향 (고리 앞쪽 도선이 오른쪽으로 흐름)
 
     st.session_state.quiz3_correct = (chosen_chevron == correct_chevron)
     
@@ -283,7 +279,7 @@ def handle_quiz3_choice_and_check(chosen_chevron):
 # 단계별 학습 진행
 # ---
 
-# 쿼리 파라미터 처리 (퀴즈 2 HTML 버튼 클릭 결과 - 안정성 위해 Streamlit 네이티브 버튼 사용 권장되지만, HTML 버튼을 유지했으므로 로직도 유지)
+# 쿼리 파라미터 처리 (퀴즈 2 HTML 버튼 클릭 결과)
 if st.session_state.step == 2 and "choice2" in st.query_params:
     chosen_pole = st.query_params["choice2"]
     # 쿼리 파라미터를 정리하여 무한 루프 방지
@@ -382,7 +378,7 @@ elif st.session_state.step == 3:
     with col_right:
         # 오른쪽 꺽쇠: 시계방향 (고리 앞쪽 도선이 오른쪽으로 흐름)
         st.button("오른쪽 (>)", 
-                  on_on_click=handle_quiz3_choice_and_check, 
+                  on_click=handle_quiz3_choice_and_check, 
                   args=('>',), 
                   use_container_width=True,
                   type="secondary",
