@@ -105,18 +105,19 @@ def get_scene_html(motion, pole, animate=True):
     force_arrow_stroke_width = 3 
     force_arrow_color = "#E94C3D"
     
-    # 코일 중심(130px)에 맞춰 화살표 위치 계산
-    # 전체 컨테이너 너비 300px, 중심 150px
-    # 코일 중심 130px이므로, 절대 위치로 150px - (화살표 크기/2) = 125px
     force_x_pos = 125 
     force_y_pos = 215
 
     # Determine initial opacity based on st.session_state.force_arrow_fixed
     up_opacity_initial = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Up' else 0
     down_opacity_initial = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Down' else 0
+    
+    # Add 'fixed-arrow-visible' class if the arrow is fixed
+    up_fixed_class = 'fixed-arrow-visible' if up_opacity_initial == 1 else ''
+    down_fixed_class = 'fixed-arrow-visible' if down_opacity_initial == 1 else ''
 
     force_up_arrow_svg = f"""
-    <svg id="force-up" class="force-arrow-preview {'fixed-arrow-visible' if up_opacity_initial == 1 else ''}" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
+    <svg id="force-up" class="force-arrow-preview {up_fixed_class}" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
           style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{up_opacity_initial}; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="19" x2="12" y2="5"></line>
         <polyline points="5 12 12 5 19 12"></polyline>
@@ -124,7 +125,7 @@ def get_scene_html(motion, pole, animate=True):
     """
 
     force_down_arrow_svg = f"""
-    <svg id="force-down" class="force-arrow-preview {'fixed-arrow-visible' if down_opacity_initial == 1 else ''}" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
+    <svg id="force-down" class="force-arrow-preview {down_fixed_class}" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
           style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{down_opacity_initial}; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <polyline points="5 12 12 19 19 12"></polyline>
@@ -175,7 +176,7 @@ def get_scene_html(motion, pole, animate=True):
     div {{
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     }}
-    /* New CSS rule for fixed arrow visibility */
+    /* New CSS rule to force visibility of fixed arrow */
     .force-arrow-preview.fixed-arrow-visible {
         opacity: 1 !important; /* Override hover effect */
     }
@@ -184,7 +185,10 @@ def get_scene_html(motion, pole, animate=True):
     return html
 
 
+# ---
 # 단계별 학습 진행
+# ---
+
 if st.session_state.step == 0:
     st.subheader("🎬 상황 관찰하기")
     st.info("랜덤으로 선택된 상황을 관찰하고, 렌츠의 법칙에 따라 코일에 유도되는 현상을 예측해 보세요.")
@@ -393,7 +397,7 @@ elif st.session_state.step == 1:
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
     
-    st.session_state.force_arrow_fixed = None
+    # st.session_state.force_arrow_fixed = None # NameError 방지를 위해 제거/주석 처리
     
     if scenario["motion"] == "down":
         top_pole = scenario["pole"]
