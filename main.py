@@ -59,8 +59,8 @@ def get_scene_html(motion, pole, animate=True):
 
     anim = f"""
     @keyframes floatMove {{
-        0%   {{ transform: translateY(0); }}
-        50%  {{ transform: translateY({move_dir}); }}
+        0%   {{ transform: translateY(0); }}
+        50%  {{ transform: translateY({move_dir}); }}
         100% {{ transform: translateY(0); }}
     }}
     """
@@ -147,12 +147,12 @@ def get_scene_html(motion, pole, animate=True):
         </div>
         <svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
             <rect x="{50 + coil_offset_x}" y="{coil_top_y_svg}" width="160" height="{coil_height}"
-                  fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
+                    fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
             <ellipse cx="{130 + coil_offset_x}" cy="{coil_bottom_y}" rx="80" ry="22"
-                     fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+                            fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
             {winding_svg}
             <ellipse cx="{130 + coil_offset_x}" cy="{coil_top_y_svg}" rx="80" ry="22"
-                     fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+                            fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
         </svg>
     </div>
     <style>
@@ -176,7 +176,7 @@ if step == 0:
     if st.button("퀴즈 시작하기 ➡️"):
         st.session_state.step = 1
         st.session_state.force_arrow_fixed = None
-        st.experimental_rerun()
+        st.rerun() # ⬅️ 수정됨
 
 # 2️⃣ 단계 1: 자기력 방향 퀴즈
 elif step == 1:
@@ -197,7 +197,7 @@ elif step == 1:
     if st.session_state.force_arrow_fixed:
         if st.button("다음으로 넘어가기 ⏭️"):
             st.session_state.step = 2
-            st.experimental_rerun()
+            st.rerun() # ⬅️ 수정됨
 
 # 3️⃣ 단계 2: 윗면 자극 퀴즈
 elif step == 2:
@@ -220,7 +220,7 @@ elif step == 2:
             st.session_state.step = 3
         else:
             st.session_state.result_message = f"❌ 오답입니다. {explanation}"
-        st.experimental_rerun()
+        st.rerun() # ⬅️ 수정됨
 
 # 4️⃣ 단계 3: 전류 방향 퀴즈
 elif step == 3:
@@ -241,7 +241,7 @@ elif step == 3:
             st.session_state.step = 4
         else:
             st.session_state.result_message = f"❌ 오답이에요. 정답은 **{current}**입니다."
-        st.experimental_rerun()
+        st.rerun() # ⬅️ 수정됨
 
 # 5️⃣ 단계 4: 완료 화면
 elif step == 4:
@@ -255,4 +255,4 @@ elif step == 4:
         available = [k for k in scenarios.keys() if k != st.session_state.scenario]
         st.session_state.scenario = random.choice(available or list(scenarios.keys()))
         st.session_state.force_arrow_fixed = None
-        st.experimental_rerun()
+        st.rerun() # ⬅️ 수정됨
