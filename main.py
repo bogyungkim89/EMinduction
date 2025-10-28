@@ -143,9 +143,8 @@ def get_scene_html(motion, pole, animate=True):
     """
     # =================================================================
 
-    # --- 수정된 부분: 유도력 화살표 위치를 25px 아래 (190 -> 215)로 조정 ---
+    # --- 유도력 화살표 위치: Y=215px로 최종 조정 ---
     
-    # 원래 크기/두께로 복원
     force_arrow_size = 50 
     force_arrow_stroke_width = 3 
     
@@ -154,7 +153,7 @@ def get_scene_html(motion, pole, animate=True):
     # X 위치: 코일 중심 (130)에 화살표 중심 (25)이 오도록 (130 - 25 = 105)
     force_x_pos = 105
     
-    # Y 위치: 215px로 조정 (이전 190px + 25px)
+    # Y 위치: 215px
     force_y_pos = 215 
 
     # Upward force arrow (Hidden by default, ID for JS targeting)
@@ -357,10 +356,11 @@ elif st.session_state.step == 1:
         if chosen_dir == correct_dir:
             st.session_state.quiz1_result = "Correct"
             st.session_state.step = 2
-            st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다.")
+            # 퀴즈 1이 정답일 경우, 다음 단계로 바로 이동합니다.
+            st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다. 다음 퀴즈로 넘어갑니다.")
         else:
             st.session_state.quiz1_result = "Incorrect"
-            st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다.")
+            st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
         
         # Clear the query parameter after processing to avoid continuous reruns
         if "choice" in st.query_params:
@@ -368,8 +368,9 @@ elif st.session_state.step == 1:
         st.rerun()
 
     # If the user answered incorrectly on a previous run, display the error message again
+    # 이 부분은 오답을 선택하고 페이지가 새로고침되었을 때 오류 메시지를 계속 보여줍니다.
     if st.session_state.quiz1_result == "Incorrect":
-        st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다.")
+        st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
