@@ -27,6 +27,9 @@ if "scenario" not in st.session_state:
     st.session_state.scenario = random.choice(list(scenarios.keys()))
 if "quiz1_result" not in st.session_state:
     st.session_state.quiz1_result = None
+# 퀴즈 1 화살표 고정 상태 추가
+if "force_arrow_fixed" not in st.session_state:
+    st.session_state.force_arrow_fixed = None
 
 scenario = scenarios[st.session_state.scenario]
 
@@ -117,10 +120,14 @@ def get_scene_html(motion, pole, animate=True):
     force_x_pos = 105 # X 위치: 코일 중심 (130)에 화살표 중심 (25)이 오도록 (130 - 25 = 105)
     force_y_pos = 215 # Y 위치: 215px
 
+    # 퀴즈 1 결과에 따라 화살표의 초기 투명도 설정
+    up_opacity = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Up' else 0
+    down_opacity = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Down' else 0
+
     # Upward force arrow
     force_up_arrow_svg = f"""
     <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
+          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{up_opacity}; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="19" x2="12" y2="5"></line>
         <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
@@ -128,7 +135,7 @@ def get_scene_html(motion, pole, animate=True):
     # Downward force arrow
     force_down_arrow_svg = f"""
     <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
+          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{down_opacity}; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <polyline points="5 12 12 19 19 12"></polyline>
     </svg>
@@ -194,6 +201,7 @@ if st.session_state.step == 0:
     if st.button("퀴즈 시작하기 ➡️"):
         st.session_state.step = 1
         st.session_state.quiz1_result = None # Reset result
+        st.session_state.force_arrow_fixed = None # Reset fixed arrow
         st.query_params.clear() # Clear any residual query params
         st.rerun()
 
@@ -221,6 +229,7 @@ elif st.session_state.step == 1:
         <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
             
             <input type="hidden" name="choice" id="choice-input-{unique_key}" value="" />
+            <input type="hidden" name="fixed_arrow" id="fixed-arrow-input-{unique_key}" value="" />
             
             <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
                 <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
@@ -283,25 +292,66 @@ elif st.session_state.step == 1:
             const forceUp = document.getElementById('force-up');
             const forceDown = document.getElementById('force-down');
             const choiceInput = document.getElementById('choice-input-{unique_key}');
+            const fixedArrowInput = document.getElementById('fixed-arrow-input-{unique_key}'); // 고정 화살표 인풋
             const quizForm = document.getElementById('quiz-form-{unique_key}');
             
+            // --- 마우스 오버/아웃 로직 ---
+            const handleMouseOver = (forceElement) => {{
+                // 고정된 화살표가 없는 경우에만 오버 효과 적용
+                if (!document.querySelector('.quiz-button.is-active')) {{
+                    forceElement.style.opacity = '1';
+                }}
+            }};
+            
+            const handleMouseOut = (forceElement) => {{
+                // 고정된 화살표가 없는 경우에만 아웃 효과 적용
+                if (!document.querySelector('.quiz-button.is-active')) {{
+                    forceElement.style.opacity = '0';
+                }}
+            }};
+            
+            // --- 클릭 로직 (수정된 부분) ---
+            const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
+                // 1. 화살표 고정 및 비활성화
+                forceElement.style.opacity = '1';
+                otherForceElement.style.opacity = '0'; // 다른 화살표는 숨김
+                
+                // 모든 버튼에서 is-active 제거 후 현재 버튼에만 추가 (UI)
+                document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
+                buttonElement.classList.add('is-active');
+                
+                // 2. Streamlit에 전달할 값 설정
+                choiceInput.value = choice; 
+                fixedArrowInput.value = choice; // 고정된 화살표 정보도 함께 전달
+                
+                // 3. 폼 제출 (Streamlit 상태 업데이트)
+                quizForm.submit();
+            }};
+            
             if (upButton && forceUp) {{
-                upButton.addEventListener('mouseover', () => {{ forceUp.style.opacity = '1'; }});
-                upButton.addEventListener('mouseout', () => {{ forceUp.style.opacity = '0'; }});
+                upButton.addEventListener('mouseover', () => handleMouseOver(forceUp));
+                upButton.addEventListener('mouseout', () => handleMouseOut(forceUp));
                 upButton.addEventListener('click', () => {{ 
-                    choiceInput.value = 'Up'; 
-                    quizForm.submit();
+                    handleClick('Up', forceUp, forceDown, upButton);
                 }});
             }}
             
             if (downButton && forceDown) {{
-                downButton.addEventListener('mouseover', () => {{ forceDown.style.opacity = '1'; }});
-                downButton.addEventListener('mouseout', () => {{ forceDown.style.opacity = '0'; }});
+                downButton.addEventListener('mouseover', () => handleMouseOver(forceDown));
+                downButton.addEventListener('mouseout', () => handleMouseOut(forceDown));
                 downButton.addEventListener('click', () => {{ 
-                    choiceInput.value = 'Down'; 
-                    quizForm.submit();
+                    handleClick('Down', forceDown, forceUp, downButton);
                 }});
             }}
+            
+            // --- Streamlit 상태 기반으로 초기 화살표 고정 ---
+            const fixedState = "{st.session_state.force_arrow_fixed}";
+            if (fixedState === 'Up') {{
+                forceUp.style.opacity = '1';
+            }} else if (fixedState === 'Down') {{
+                forceDown.style.opacity = '1';
+            }}
+            
         </script>
     </form>
     """
@@ -312,8 +362,19 @@ elif st.session_state.step == 1:
     query_params = st.query_params
     
     chosen_dir = query_params.get("choice")
+    fixed_arrow = query_params.get("fixed_arrow") # 고정된 화살표 정보 획득
     
-    # Process the selection and transition if correct
+    # Step 1: 고정된 화살표 상태 업데이트 (UI 고정을 Streamlit 상태로 반영)
+    if fixed_arrow:
+        st.session_state.force_arrow_fixed = fixed_arrow
+        # 고정 정보는 반영했으므로 쿼리 파라미터에서 제거
+        if "fixed_arrow" in st.query_params:
+            del st.query_params["fixed_arrow"]
+        # Streamlit이 다시 실행되어 새로운 force_arrow_fixed 값을 반영한 HTML을 렌더링해야 함
+        st.rerun()
+
+
+    # Step 2: 퀴즈 정답 처리
     if chosen_dir and st.session_state.quiz1_result is None:
         if chosen_dir == correct_dir:
             st.session_state.quiz1_result = "Correct"
@@ -338,7 +399,7 @@ elif st.session_state.step == 1:
     if st.session_state.quiz1_result == "Incorrect":
         st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
 
-    # --- 추가된 부분: 다음 단계로 넘어가는 버튼 (정답 여부와 무관하게 이동) ---
+    # --- 다음 단계로 넘어가는 버튼 (정답 여부와 무관하게 이동) ---
     st.markdown("---")
     if st.button("다음으로 넘어가기 ⏭️"):
         st.session_state.step = 2
@@ -348,6 +409,9 @@ elif st.session_state.step == 1:
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
+    
+    # 퀴즈 1 상태 초기화
+    st.session_state.force_arrow_fixed = None
     
     # 유도되는 극성 계산 (퀴즈 1의 결과와 일치)
     if scenario["motion"] == "down": # 가까워지면 밀어내야 하므로 같은 극
@@ -412,4 +476,6 @@ elif st.session_state.step == 4:
             st.session_state.scenario = random.choice(available_scenarios)
         else:
             st.session_state.scenario = random.choice(list(scenarios.keys()))
+        st.session_state.quiz1_result = None # Reset result
+        st.session_state.force_arrow_fixed = None # Reset fixed arrow
         st.rerun()
