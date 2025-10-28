@@ -28,7 +28,7 @@ def draw_scene(motion, pole, animate=True):
     move_dir = "80px" if motion == "down" else "-80px"
     arrow_symbol = "⬇️" if motion == "down" else "⬆️"
 
-    # --- 애니메이션 키프레임: 절반 시간으로 (1.5s) + 복귀시간 3배 유지 ---
+    # --- 애니메이션 키프레임: 절반 시간 (1.5s) + 복귀시간 3배 느리게 ---
     anim = f"""
     @keyframes floatMove {{
         0%   {{ transform: translateY(0); }}
@@ -39,23 +39,27 @@ def draw_scene(motion, pole, animate=True):
     """
 
     html = f"""
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px;">
+    <div style="position: relative; display:flex; flex-direction:column; align-items:center; margin-top:10px;">
       
-      <!-- 자석 + 화살표 -->
-      <div style="display:flex; align-items:center; justify-content:center; position:relative; top:0;">
+      <!-- 자석 + 화살표 (화살표 절대 위치) -->
+      <div style="position: relative; width: 200px; height: 200px; display:flex; justify-content:center; align-items:flex-start;">
         
         <!-- 자석 본체 -->
         <div style="
             width:80px; height:160px;
             background:#ddd; border:4px solid #222;
             display:flex; align-items:flex-end; justify-content:center;
-            position:relative;
+            position:absolute; top:0; left:50%; transform:translateX(-50%);
             animation:{'floatMove 1.5s ease-in-out infinite' if animate else 'none'};">
             <div style="font-size:56px; font-weight:bold; color:{pole_color}; margin-bottom:6px;">{pole}</div>
         </div>
 
         <!-- 방향 화살표 -->
-        <div style="font-size:48px; margin-left:30px; color:#444;">
+        <div style="
+            position:absolute;
+            top:50%; left:calc(50% + 80px);
+            transform:translateY(-50%);
+            font-size:48px; color:#444;">
             {arrow_symbol}
         </div>
 
