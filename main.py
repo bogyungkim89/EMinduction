@@ -85,7 +85,7 @@ def draw_scene(motion, pole, animate=True):
     # 전선 감기 시작 Y 좌표 (위쪽 외부 전선 Y 좌표)
     wire_start_y = coil_top_y + 10  # 140
     
-    # [수정된 부분] 코일 내부 와인딩 종료 Y 좌표 (원래 위치로 복원: 300)
+    # 코일 내부 와인딩 종료 Y 좌표 (300)
     wire_end_y = coil_bottom_y - 10 
     
     # 전선 감긴 횟수: 7턴
@@ -125,7 +125,7 @@ def draw_scene(motion, pole, animate=True):
     winding_path_d = " ".join(winding_front_segments)
 
     # ---------------------------------------------------------------
-    # 2. 코일 이탈 경로 (원래대로: 단일 수평선)
+    # 2. 코일 이탈 경로 (단일 수평선)
     # ---------------------------------------------------------------
     exit_y_coil = wire_end_y # 300 (코일 와인딩 끝 Y 좌표)
     
@@ -137,7 +137,7 @@ def draw_scene(motion, pole, animate=True):
     winding_svg = f"""
         <!-- 진입선 (수평 직선) --><path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
         <!-- 코일 감은 부분 (앞면만) --><path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
-        <!-- 이탈선 (수평 직선 - 원래 위치로 복원) --><path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <!-- 이탈선 (수평 직선) --><path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
     # =================================================================
     
@@ -151,6 +151,7 @@ def draw_scene(motion, pole, animate=True):
             background:#ccc; border:4px solid #222; border-radius:10px;
             display:flex; align-items:flex-end; justify-content:center;
             position:relative;
+            transform: translateX(-20px); /* 코일 중심축과 정렬을 위해 왼쪽으로 20px 이동 */
             /* 애니메이션 적용: 움직임 요청 시 3초 ease-in-out 무한 반복 */
             animation:{'floatMove 3s ease-in-out infinite' if animate else 'none'};">
             
