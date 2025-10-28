@@ -330,8 +330,7 @@ elif st.session_state.step == 2:
         top_pole = scenario["pole"]
     else:
         top_pole = "S" if scenario["pole"] == "N" else "N"
+
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
     options = ["윗면이 N극", "윗면이 S극"]
-    answer2 = st.radio("코일의 윗면 자극을 선택하세요", options)
-    if st.button("정답 확인 및 다음 단계 ➡️"):
-        if answer2 == f"윗면이 {top_pole
+    answer
