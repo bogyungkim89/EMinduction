@@ -108,30 +108,31 @@ def get_scene_html(motion, pole, animate=True):
     # 코일 중심(130px)에 맞춰 화살표 위치 계산
     # 전체 컨테이너 너비 300px, 중심 150px
     # 코일 중심 130px이므로, 절대 위치로 150px - (화살표 크기/2) = 125px
-    force_x_pos = 125  # 중심 정렬
+    force_x_pos = 125 
     force_y_pos = 215
 
-    up_opacity = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Up' else 0
-    down_opacity = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Down' else 0
+    # Determine initial opacity based on st.session_state.force_arrow_fixed
+    up_opacity_initial = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Up' else 0
+    down_opacity_initial = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Down' else 0
 
     force_up_arrow_svg = f"""
-    <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{up_opacity}; pointer-events: none; transition: opacity 0.1s;">
+    <svg id="force-up" class="force-arrow-preview {'fixed-arrow-visible' if up_opacity_initial == 1 else ''}" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
+          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{up_opacity_initial}; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="19" x2="12" y2="5"></line>
         <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
     """
 
     force_down_arrow_svg = f"""
-    <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{down_opacity}; pointer-events: none; transition: opacity 0.1s;">
+    <svg id="force-down" class="force-arrow-preview {'fixed-arrow-visible' if down_opacity_initial == 1 else ''}" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
+          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{down_opacity_initial}; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <polyline points="5 12 12 19 19 12"></polyline>
     </svg>
     """
     
     # 자석 위치: 전체 컨테이너 중심(150px)에 자석 너비의 절반(40px)을 빼서 중앙 정렬
-    magnet_left_position = 110  # 150 - 40 = 110px
+    magnet_left_position = 110 
     
     html = f"""
     <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative; width: 300px; margin-left: auto; margin-right: auto;">
@@ -174,6 +175,10 @@ def get_scene_html(motion, pole, animate=True):
     div {{
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     }}
+    /* New CSS rule for fixed arrow visibility */
+    .force-arrow-preview.fixed-arrow-visible {
+        opacity: 1 !important; /* Override hover effect */
+    }
     </style>
     """
     return html
@@ -262,6 +267,10 @@ elif st.session_state.step == 1:
             #down-choice button {{
                 border: 2px solid #ef4444;
             }}
+            /* New CSS rule to force visibility of fixed arrow */
+            .force-arrow-preview.fixed-arrow-visible {
+                opacity: 1 !important; /* Override any other opacity settings */
+            }
         </style>
         
         <script>
@@ -274,21 +283,30 @@ elif st.session_state.step == 1:
             const quizForm = document.getElementById('quiz-form-{unique_key}');
             
             const handleMouseOver = (forceElement) => {{
-                if (!document.querySelector('.quiz-button.is-active')) {{
+                // Only show on hover if no arrow is currently fixed (clicked)
+                if (!forceUp.classList.contains('fixed-arrow-visible') && !forceDown.classList.contains('fixed-arrow-visible')) {{
                     forceElement.style.opacity = '1';
                 }}
             }};
             
             const handleMouseOut = (forceElement) => {{
-                if (!document.querySelector('.quiz-button.is-active')) {{
+                // Only hide on mouse out if no arrow is currently fixed (clicked)
+                if (!forceUp.classList.contains('fixed-arrow-visible') && !forceDown.classList.contains('fixed-arrow-visible')) {{
                     forceElement.style.opacity = '0';
                 }}
             }};
             
             const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
-                forceElement.style.opacity = '1';
-                otherForceElement.style.opacity = '0';
-                
+                // Remove fixed-arrow-visible from both and reset opacity
+                forceUp.classList.remove('fixed-arrow-visible');
+                forceDown.classList.remove('fixed-arrow-visible');
+                forceUp.style.opacity = '0';
+                forceDown.style.opacity = '0';
+
+                // Add fixed-arrow-visible to the clicked one
+                forceElement.classList.add('fixed-arrow-visible');
+                forceElement.style.opacity = '1'; // Ensure it's visible immediately
+
                 document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
                 buttonElement.classList.add('is-active');
                 
@@ -314,13 +332,20 @@ elif st.session_state.step == 1:
                 }});
             }}
             
+            // Reapply fixed state if it exists on page reload
             const fixedState = "{st.session_state.force_arrow_fixed}";
             if (fixedState === 'Up') {{
-                forceUp.style.opacity = '1';
-                upButton.classList.add('is-active');
+                if (forceUp) {{
+                    forceUp.classList.add('fixed-arrow-visible');
+                    forceUp.style.opacity = '1';
+                }}
+                if (upButton) upButton.classList.add('is-active');
             }} else if (fixedState === 'Down') {{
-                forceDown.style.opacity = '1';
-                downButton.classList.add('is-active');
+                if (forceDown) {{
+                    forceDown.classList.add('fixed-arrow-visible');
+                    forceDown.style.opacity = '1';
+                }}
+                if (downButton) downButton.classList.add('is-active');
             }}
             
         </script>
