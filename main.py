@@ -34,6 +34,7 @@ scenario = scenarios[st.session_state.scenario]
 def get_scene_html(motion, pole, animate=True):
     """
     자석의 움직임과 극성을 시각화하는 HTML/CSS 코드를 생성하여 반환합니다.
+    (화살표 위치 Y=215px 유지)
     """
     pole_color = "red" if pole == "N" else "blue"
     
@@ -75,67 +76,33 @@ def get_scene_html(motion, pole, animate=True):
     }}
     """
     
-    # =================================================================
-    # 코일 및 전선 경로 정의
-    # -----------------------------------------------------------------
-    
-    # 코일 몸통 Y 좌표 설정: 높이 180px
+    # 코일 및 전선 경로 정의 (생략 - 위치 조정과 무관)
     coil_height = 180
-    coil_top_y_svg = 130 # 코일 윗면 중심 Y 좌표 (scene-visualization 컨테이너 기준)
-    coil_bottom_y = coil_top_y_svg + coil_height # 310 (코일 아랫면 중심 Y 좌표)
-    
-    # 전선 감기 시작 Y 좌표 (위쪽 외부 전선 Y 좌표)
-    wire_start_y = coil_top_y_svg + 10  # 140
-    
-    # 코일 내부 와인딩 종료 Y 좌표 (300)
+    coil_top_y_svg = 130 
+    coil_bottom_y = coil_top_y_svg + coil_height 
+    wire_start_y = coil_top_y_svg + 10  
     wire_end_y = coil_bottom_y - 10 
-    
-    # 전선 감긴 횟수: 7턴
     num_turns = 7
-    # 코일 내부 전선 간격 (Y_end - Y_start) / (턴 수 - 1)
     step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
-    
-    start_x = 210 # 코일 오른쪽 끝 (130 + 80 = 210)
-    end_x = 50    # 코일 왼쪽 끝 (130 - 80 = 50)
-
-    # 외부 수평 전선 길이를 2.5배로 늘린 X 좌표 (210 + 75 = 285)
+    start_x = 210 
+    end_x = 50   
     exit_x_end = start_x + 75 
 
-    # ---------------------------------------------------------------
-    # 1. 오른쪽 전선 진입 (수평 직선) - Y 좌표 140
     external_wire_in = f"M {exit_x_end} {wire_start_y} L {start_x} {wire_start_y}"
-    
     winding_front_segments = []
-    
-    # 첫 아크 시작점 (210, 140)
     winding_front_segments.append(f"M {start_x} {wire_start_y}")
-
-    # 7개의 턴에 해당하는 앞면 아크를 그립니다.
     for i in range(num_turns): 
         current_y = wire_start_y + i * step_y 
-        
-        # Front Arc (Visible, Right to Left, Lower half, sweep-flag=1)
         arc = f"A 80 22 0 0 1 {end_x} {current_y}"
         winding_front_segments.append(arc)
-        
         if i < num_turns -1:
             next_y = wire_start_y + (i + 1) * step_y 
-            
-            # (50, current_y)에서 다음 (210, next_y)로 점프
             winding_front_segments.append(f"M {start_x} {next_y}")
             
     winding_path_d = " ".join(winding_front_segments)
-
-    # ---------------------------------------------------------------
-    # 2. 코일 이탈 경로 (단일 수평선)
-    # ---------------------------------------------------------------
-    exit_y_coil = wire_end_y # 300 (코일 와인딩 끝 Y 좌표)
-    
-    # 마지막 아크 끝점 (50, 300)에서 코일 내부를 거쳐 오른쪽 끝 (210, 300)으로 연결된 후,
-    # 외부 수평선으로 연결됩니다.
+    exit_y_coil = wire_end_y 
     external_wire_out = f"M {start_x} {exit_y_coil} L {exit_x_end} {exit_y_coil}" 
     
-    # 헬릭스 Path 및 외부 연결선 통합
     winding_svg = f"""
         <!-- 진입선 (수평 직선) --><path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
         <!-- 코일 감은 부분 (앞면만) --><path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
@@ -143,21 +110,14 @@ def get_scene_html(motion, pole, animate=True):
     """
     # =================================================================
 
-    # --- 유도력 화살표 위치: Y=215px로 최종 조정 ---
-    
+    # --- 유도력 화살표 위치: Y=215px ---
     force_arrow_size = 50 
     force_arrow_stroke_width = 3 
-    
     force_arrow_color = "#E94C3D" 
+    force_x_pos = 105 # X 위치: 코일 중심 (130)에 화살표 중심 (25)이 오도록 (130 - 25 = 105)
+    force_y_pos = 215 # Y 위치: 215px
 
-    # X 위치: 코일 중심 (130)에 화살표 중심 (25)이 오도록 (130 - 25 = 105)
-    force_x_pos = 105
-    
-    # Y 위치: 215px
-    force_y_pos = 215 
-
-    # Upward force arrow (Hidden by default, ID for JS targeting)
-    # z-index: 10으로 설정하여 자석과 코일보다 앞에 나타나도록 함
+    # Upward force arrow
     force_up_arrow_svg = f"""
     <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
@@ -165,7 +125,7 @@ def get_scene_html(motion, pole, animate=True):
         <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
     """
-    # Downward force arrow (Hidden by default, ID for JS targeting)
+    # Downward force arrow
     force_down_arrow_svg = f"""
     <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
@@ -173,7 +133,6 @@ def get_scene_html(motion, pole, animate=True):
         <polyline points="5 12 12 19 19 12"></polyline>
     </svg>
     """
-    # -----------------------------------------------------------------
     
     # 자석의 색깔, 극성, 애니메이션을 포함한 HTML 구조
     html = f"""
@@ -239,6 +198,13 @@ if st.session_state.step == 0:
         st.rerun()
 
 elif st.session_state.step == 1:
+    
+    # --- 수정된 부분: 이미 정답을 맞힌 경우 바로 다음 단계로 전환 (안전 체크) ---
+    if st.session_state.quiz1_result == "Correct":
+        st.session_state.step = 2
+        st.rerun()
+    # -------------------------------------------------------------------------
+        
     st.subheader("퀴즈 ①: 코일이 자석에 가하는 자기력 방향")
     
     # 렌츠의 법칙: 변화를 방해하는 방향으로 자기력 작용
@@ -355,20 +321,18 @@ elif st.session_state.step == 1:
         # Process the selection
         if chosen_dir == correct_dir:
             st.session_state.quiz1_result = "Correct"
-            st.session_state.step = 2
-            # 퀴즈 1이 정답일 경우, 다음 단계로 바로 이동합니다.
-            st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다. 다음 퀴즈로 넘어갑니다.")
+            st.session_state.step = 2 # Setting the next step
+            st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다. 다음 퀴즈로 넘어갑니다. (잠시 후 화면이 전환됩니다.)")
         else:
             st.session_state.quiz1_result = "Incorrect"
             st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
         
-        # Clear the query parameter after processing to avoid continuous reruns
+        # Crucial: Clear the query parameter and trigger rerun to apply state changes
         if "choice" in st.query_params:
             del st.query_params["choice"]
         st.rerun()
 
     # If the user answered incorrectly on a previous run, display the error message again
-    # 이 부분은 오답을 선택하고 페이지가 새로고침되었을 때 오류 메시지를 계속 보여줍니다.
     if st.session_state.quiz1_result == "Incorrect":
         st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
 
