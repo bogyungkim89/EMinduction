@@ -202,18 +202,30 @@ elif st.session_state.step == 1:
     draw_scene(scenario["motion"], scenario["pole"], animate=True)
     
     # 렌츠의 법칙: 변화를 방해하는 방향으로 자기력 작용
-    correct = "위쪽(밀어냄)" if scenario["motion"] == "down" else "아래쪽(끌어당김)"
+    correct_dir = "Up" if scenario["motion"] == "down" else "Down"
+    correct_text = "위쪽(밀어냄)" if correct_dir == "Up" else "아래쪽(끌어당김)"
     
     st.warning("💡 렌츠의 법칙: 자속 변화를 '방해'하는 방향으로 유도 자기장이 형성됩니다.")
-    options = ["위쪽(밀어냄)", "아래쪽(끌어당김)"]
-    answer1 = st.radio("코일이 자석에 가하는 힘의 방향을 선택하세요", options)
+    st.markdown("**코일이 자석에 가하는 힘의 방향을 선택하세요:**")
     
-    if st.button("정답 확인 및 다음 단계 ➡️"):
-        if answer1 == correct:
+    # 화살표 이미지를 사용하는 버튼으로 변경
+    col1, col2 = st.columns(2)
+    
+    up_button = col1.button("⬆️ 위쪽 힘", use_container_width=True, key="quiz1_up")
+    down_button = col2.button("⬇️ 아래쪽 힘", use_container_width=True, key="quiz1_down")
+    
+    chosen_dir = None
+    if up_button:
+        chosen_dir = "Up"
+    elif down_button:
+        chosen_dir = "Down"
+
+    if chosen_dir:
+        if chosen_dir == correct_dir:
             st.session_state.step = 2
             st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다.")
         else:
-            st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct}**입니다.")
+            st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다.")
         st.rerun()
 
 elif st.session_state.step == 2:
