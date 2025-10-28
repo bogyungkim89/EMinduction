@@ -67,7 +67,8 @@ def get_scene_html(motion, pole, animate=True):
     }}
     """
     
-    # 코일 설정
+    # 코일 설정 (오른쪽으로 20px 이동)
+    coil_offset_x = 20  # 코일 전체를 오른쪽으로 이동
     coil_height = 180
     coil_top_y_svg = 130 
     coil_bottom_y = coil_top_y_svg + coil_height 
@@ -75,8 +76,8 @@ def get_scene_html(motion, pole, animate=True):
     wire_end_y = coil_bottom_y - 10 
     num_turns = 7
     step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
-    start_x = 210 
-    end_x = 50  
+    start_x = 210 + coil_offset_x
+    end_x = 50 + coil_offset_x
     exit_x_end = start_x + 75 
 
     external_wire_in = f"M {exit_x_end} {wire_start_y} L {start_x} {wire_start_y}"
@@ -100,15 +101,14 @@ def get_scene_html(motion, pole, animate=True):
         <path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
 
-    # 유도력 화살표 위치
+    # 유도력 화살표 위치 (코일 이동에 맞춰 조정)
     force_arrow_size = 50 
     force_arrow_stroke_width = 3 
     force_arrow_color = "#E94C3D"
     
-    # 코일 중심(130px)에 맞춰 화살표 위치 계산
-    # 전체 컨테이너 너비 300px, 중심 150px
-    # 코일 중심 130px이므로, 절대 위치로 150px - (화살표 크기/2) = 125px
-    force_x_pos = 125  # 중심 정렬
+    # 코일 중심(130 + 20 = 150px)에 맞춰 화살표 위치 계산
+    coil_center_x = 130 + coil_offset_x
+    force_x_pos = coil_center_x - (force_arrow_size / 2)  # 화살표 중심을 코일 중심에 맞춤
     force_y_pos = 215
 
     up_opacity = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Up' else 0
@@ -130,8 +130,9 @@ def get_scene_html(motion, pole, animate=True):
     </svg>
     """
     
-    # 자석 위치: 전체 컨테이너 중심(150px)에 자석 너비의 절반(40px)을 빼서 중앙 정렬
-    magnet_left_position = 110  # 150 - 40 = 110px
+    # 자석 위치: 코일 중심에 맞춰 재계산 (코일이 오른쪽으로 20px 이동)
+    coil_center_x = 130 + coil_offset_x  # 150px
+    magnet_left_position = coil_center_x - 40  # 자석 중심을 코일 중심에 맞춤 (130px)
     
     html = f"""
     <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative; width: 300px; margin-left: auto; margin-right: auto;">
@@ -160,12 +161,12 @@ def get_scene_html(motion, pole, animate=True):
       </div>
 
       <svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
-        <rect x="50" y="{coil_top_y_svg}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
-        <ellipse cx="130" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+        <rect x="{50 + coil_offset_x}" y="{coil_top_y_svg}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
+        <ellipse cx="{130 + coil_offset_x}" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
         
         {winding_svg}
 
-        <ellipse cx="130" cy="{coil_top_y_svg}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+        <ellipse cx="{130 + coil_offset_x}" cy="{coil_top_y_svg}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
       </svg>
     </div>
 
