@@ -85,7 +85,7 @@ def get_scene_html(motion, pole, animate=True):
     num_turns = 7
     step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
     start_x = 210 
-    end_x = 50   
+    end_x = 50  
     exit_x_end = start_x + 75 
 
     external_wire_in = f"M {exit_x_end} {wire_start_y} L {start_x} {wire_start_y}"
@@ -104,9 +104,9 @@ def get_scene_html(motion, pole, animate=True):
     external_wire_out = f"M {start_x} {exit_y_coil} L {exit_x_end} {exit_y_coil}" 
     
     winding_svg = f"""
-        <!-- 진입선 (수평 직선) --><path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
-        <!-- 코일 감은 부분 (앞면만) --><path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
-        <!-- 이탈선 (수평 직선) --><path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
     # =================================================================
 
@@ -120,7 +120,7 @@ def get_scene_html(motion, pole, animate=True):
     # Upward force arrow
     force_up_arrow_svg = f"""
     <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-         style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
+          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="19" x2="12" y2="5"></line>
         <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
@@ -128,7 +128,7 @@ def get_scene_html(motion, pole, animate=True):
     # Downward force arrow
     force_down_arrow_svg = f"""
     <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-         style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
+          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <polyline points="5 12 12 19 19 12"></polyline>
     </svg>
@@ -141,7 +141,7 @@ def get_scene_html(motion, pole, animate=True):
       {force_up_arrow_svg}
       {force_down_arrow_svg}
         
-      <!-- 자석 컨테이너 --><div style="display:flex; align-items:center; justify-content:center; position:relative; top:0;">
+      <div style="display:flex; align-items:center; justify-content:center; position:relative; top:0;">
         <div style="
             width:80px; height:160px;
             background:#ccc; border:4px solid #222; border-radius:10px;
@@ -151,23 +151,23 @@ def get_scene_html(motion, pole, animate=True):
             /* 애니메이션 적용: 움직임 요청 시 3초 ease-in-out 무한 반복 */
             animation:{'floatMove 3s ease-in-out infinite' if animate else 'none'};">
             
-            <!-- N/S 극 표시 --><div style="
+            <div style="
                 font-size:56px; font-weight:bold; 
                 color:{pole_color}; 
                 margin-bottom:2px;
                 text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
                 {pole}
             </div>
-            {arrow_svg if animate else ''} <!-- 애니메이션 활성화 시에만 화살표 표시 --></div>
+            {arrow_svg if animate else ''} </div>
       </div>
 
-      <!-- 코일 (SVG를 사용하여 입체적으로 표현) - 너비 300 유지 --><svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
-        <!-- 1. 코일 몸통 사각형 (배경) - 높이 180px (Y: 130~310) --><rect x="50" y="{coil_top_y_svg}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
-        <!-- 2. 코일 아랫면 타원 (밑면) - Y=310 --><ellipse cx="130" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+      <svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
+        <rect x="50" y="{coil_top_y_svg}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
+        <ellipse cx="130" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
         
-        <!-- 3. 코일 감은 선 (시계방향 헬릭스 및 외부 연결선) -->{winding_svg}
+        {winding_svg}
 
-        <!-- 4. 코일 윗면 타원 (윗면/개구부) - Y=130 --><ellipse cx="130" cy="{coil_top_y_svg}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+        <ellipse cx="130" cy="{coil_top_y_svg}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
       </svg>
     </div>
 
@@ -218,13 +218,11 @@ elif st.session_state.step == 1:
     
     # HTML Component for combined visualization, buttons, and hover logic
     quiz1_full_html = f"""
-    <!-- HTML Form Submission for Streamlit state management -->
     <form method="get" action="" id="quiz-form-{unique_key}">
         <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
             
             <input type="hidden" name="choice" id="choice-input-{unique_key}" value="" />
             
-            <!-- 버튼 컨테이너 -->
             <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
                 <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
                     <button 
@@ -246,7 +244,6 @@ elif st.session_state.step == 1:
                 </div>
             </div>
             
-            <!-- 시각화 영역: Force Arrow SVGs를 포함하고 있음 -->
             <div id="visualization-area">
                 {get_scene_html(scenario["motion"], scenario["pole"], animate=True)}
             </div>
@@ -317,20 +314,26 @@ elif st.session_state.step == 1:
     
     chosen_dir = query_params.get("choice")
     
+    # Process the selection and transition if correct
     if chosen_dir and st.session_state.quiz1_result is None:
-        # Process the selection
         if chosen_dir == correct_dir:
             st.session_state.quiz1_result = "Correct"
             st.session_state.step = 2 # Setting the next step
             st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다. 다음 퀴즈로 넘어갑니다. (잠시 후 화면이 전환됩니다.)")
+            
+            # Crucial: Clear the query parameter and trigger rerun to apply state changes
+            if "choice" in st.query_params:
+                del st.query_params["choice"]
+            st.rerun() # Immediately rerun to transition to step 2
+            
         else:
             st.session_state.quiz1_result = "Incorrect"
             st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
-        
-        # Crucial: Clear the query parameter and trigger rerun to apply state changes
-        if "choice" in st.query_params:
-            del st.query_params["choice"]
-        st.rerun()
+            
+            # Clear the query parameter so the error doesn't persist on subsequent runs
+            if "choice" in st.query_params:
+                del st.query_params["choice"]
+            st.rerun() # Rerun to display the error and re-render the quiz without the query param
 
     # If the user answered incorrectly on a previous run, display the error message again
     if st.session_state.quiz1_result == "Incorrect":
