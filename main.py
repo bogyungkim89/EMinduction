@@ -204,6 +204,17 @@ if st.session_state.step == 0:
 
 elif st.session_state.step == 1:
     
+    # 먼저 query_params 확인 및 처리
+    query_params = st.query_params
+    chosen_dir = query_params.get("choice")
+    
+    # 버튼 클릭 시 바로 step 2로 전환
+    if chosen_dir:
+        st.session_state.step = 2
+        st.session_state.force_arrow_fixed = chosen_dir
+        st.query_params.clear()
+        st.rerun()
+    
     st.subheader("퀴즈 ①: 코일이 자석에 가하는 자기력 방향")
     
     correct_dir = "Up" if scenario["motion"] == "down" else "Down"
@@ -219,8 +230,8 @@ elif st.session_state.step == 1:
         <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
             
             <input type="hidden" name="choice" id="choice-input-{unique_key}" value="" />
-            <input type="hidden" name="fixed_arrow" id="fixed-arrow-input-{unique_key}" value="" />
-            <input type="hidden" name="next_step" value="2" /> <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
+            
+            <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
                 <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
                     <button type="button" class="quiz-button" data-choice="Up">
                         ⬆️ 위쪽 힘
@@ -265,7 +276,6 @@ elif st.session_state.step == 1:
             #down-choice button {{
                 border: 2px solid #ef4444;
             }}
-            /* New CSS rule to force visibility of fixed arrow */
             .force-arrow-preview.fixed-arrow-visible {{
                 opacity: 1 !important; 
             }}
@@ -277,31 +287,27 @@ elif st.session_state.step == 1:
             const forceUp = document.getElementById('force-up');
             const forceDown = document.getElementById('force-down');
             const choiceInput = document.getElementById('choice-input-{unique_key}');
-            const fixedArrowInput = document.getElementById('fixed-arrow-input-{unique_key}'); 
             const quizForm = document.getElementById('quiz-form-{unique_key}');
             
             const handleMouseOver = (forceElement) => {{
-                // Only show on hover if no arrow is currently fixed (clicked)
                 if (!forceUp.classList.contains('fixed-arrow-visible') && !forceDown.classList.contains('fixed-arrow-visible')) {{
                     forceElement.style.opacity = '1';
                 }}
             }};
             
             const handleMouseOut = (forceElement) => {{
-                // Only hide on mouse out if no arrow is currently fixed (clicked)
                 if (!forceUp.classList.contains('fixed-arrow-visible') && !forceDown.classList.contains('fixed-arrow-visible')) {{
                     forceElement.style.opacity = '0';
                 }}
             }};
             
             const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
-                // Remove fixed-arrow-visible from both and reset opacity
+                // 화살표 고정
                 forceUp.classList.remove('fixed-arrow-visible');
                 forceDown.classList.remove('fixed-arrow-visible');
                 forceUp.style.opacity = '0';
                 forceDown.style.opacity = '0';
 
-                // Add fixed-arrow-visible to the clicked one
                 forceElement.classList.add('fixed-arrow-visible');
                 forceElement.style.opacity = '1'; 
 
@@ -309,9 +315,9 @@ elif st.session_state.step == 1:
                 buttonElement.classList.add('is-active');
                 
                 choiceInput.value = choice; 
-                fixedArrowInput.value = choice;
                 
-                quizForm.submit(); // 폼을 제출하여 파이썬 코드를 재실행
+                // 폼 제출하여 다음 단계로 이동
+                quizForm.submit();
             }};
             
             if (upButton && forceUp) {{
@@ -329,56 +335,11 @@ elif st.session_state.step == 1:
                     handleClick('Down', forceDown, forceUp, downButton);
                 }});
             }}
-            
-            // Reapply fixed state if it exists on page reload
-            const fixedState = "{st.session_state.force_arrow_fixed}";
-            if (fixedState === 'Up') {{
-                if (forceUp) {{
-                    forceUp.classList.add('fixed-arrow-visible');
-                    forceUp.style.opacity = '1';
-                }}
-                if (upButton) upButton.classList.add('is-active');
-            }} else if (fixedState === 'Down') {{
-                if (forceDown) {{
-                    forceDown.classList.add('fixed-arrow-visible');
-                    forceDown.style.opacity = '1';
-                }}
-                if (downButton) downButton.classList.add('is-active');
-            }}
-            
         </script>
     </form>
     """
     
     st.components.v1.html(quiz1_full_html, height=620)
-    
-    # --- Python 로직: 쿼리 파라미터를 읽어 상태 업데이트 및 다음 단계로 이동 ---
-    query_params = st.query_params
-    chosen_dir = query_params.get("choice")
-    fixed_arrow = query_params.get("fixed_arrow")
-    next_step = query_params.get("next_step") # '2'가 넘어오게 됨
-
-    # 1. 화살표 고정 상태 업데이트 (재실행)
-    if fixed_arrow and st.session_state.force_arrow_fixed != fixed_arrow:
-        st.session_state.force_arrow_fixed = fixed_arrow
-        if "fixed_arrow" in st.query_params:
-            del st.query_params["fixed_arrow"]
-        st.rerun()
-
-    # 2. 버튼 클릭 시 (choice가 있을 때) 무조건 step 2로 이동
-    if chosen_dir:
-        # 퀴즈 1의 정답 여부와 관계없이 다음 단계로 전환
-        st.session_state.step = 2
-        
-        # 쿼리 파라미터 정리
-        if "choice" in st.query_params:
-            del st.query_params["choice"]
-        if "next_step" in st.query_params:
-            del st.query_params["next_step"]
-            
-        st.rerun()
-    
-    # 퀴즈 1 정답/오답 메시지 및 '다음으로 넘어가기' 버튼 로직은 제거됨
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
