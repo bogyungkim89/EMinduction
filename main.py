@@ -67,8 +67,7 @@ def get_scene_html(motion, pole, animate=True):
     }}
     """
     
-    # 코일 설정 (오른쪽으로 20px 이동)
-    coil_offset_x = 20  # 코일 전체를 오른쪽으로 이동
+    # 코일 설정
     coil_height = 180
     coil_top_y_svg = 130 
     coil_bottom_y = coil_top_y_svg + coil_height 
@@ -76,8 +75,8 @@ def get_scene_html(motion, pole, animate=True):
     wire_end_y = coil_bottom_y - 10 
     num_turns = 7
     step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
-    start_x = 210 + coil_offset_x
-    end_x = 50 + coil_offset_x
+    start_x = 210 
+    end_x = 50  
     exit_x_end = start_x + 75 
 
     external_wire_in = f"M {exit_x_end} {wire_start_y} L {start_x} {wire_start_y}"
