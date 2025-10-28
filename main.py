@@ -28,6 +28,12 @@ if "quiz2_choice" not in st.session_state:
     st.session_state.quiz2_choice = None
 if "quiz2_correct" not in st.session_state:
     st.session_state.quiz2_correct = False
+# 퀴즈 3 선택 (꺽쇠) 및 정답 여부 상태 추가
+if "quiz3_choice" not in st.session_state:
+    st.session_state.quiz3_choice = None
+if "quiz3_correct" not in st.session_state:
+    st.session_state.quiz3_correct = False
+
 
 scenario = scenarios[st.session_state.scenario]
 
@@ -35,12 +41,11 @@ scenario = scenarios[st.session_state.scenario]
 def get_scene_html(motion, pole, animate=True):
     """
     자석의 움직임과 극성을 시각화하는 HTML/CSS 코드를 생성하여 반환합니다.
-    (퀴즈 2의 HTML 버튼 관련 코드는 제거하고 시각화만 담당하도록 했습니다.)
     """
     pole_color = "red" if pole == "N" else "blue"
     move_dir = "80px" if motion == "down" else "-80px"
     
-    # --- 화살표 SVG 정의 (자석 운동 방향) ---
+    # --- 화살표 SVG 정의 (자석 운동 방향) --- (생략: 기존 코드와 동일)
     arrow_color = "#4CAF50"
     arrow_size = 40
     arrow_offset_x = 70
@@ -71,7 +76,7 @@ def get_scene_html(motion, pole, animate=True):
     }}
     """
     
-    # --- 코일 설정 (생략: 기존 코드와 동일) ---
+    # --- 코일 설정 ---
     coil_height = 180
     coil_top_y_svg = 130 
     coil_bottom_y = coil_top_y_svg + coil_height 
@@ -84,6 +89,36 @@ def get_scene_html(motion, pole, animate=True):
     exit_x_end = start_x + 75 
 
     external_wire_in = f"M {exit_x_end} {wire_start_y} L {start_x} {wire_start_y}"
+    
+    # 코일 중앙에 꺽쇠를 넣기 위한 SVG 추가
+    chevron_svg = ""
+    if st.session_state.step == 3 and st.session_state.quiz3_choice:
+        chevron = st.session_state.quiz3_choice # '>' 또는 '<'
+        chevron_color = "#3498db"
+        
+        # 꺽쇠를 표시할 y 좌표 (대략 코일 중앙)
+        y_pos = wire_start_y + 3 * step_y # 7개 턴 중 4번째 턴 근처
+        
+        # 코일의 좌우 곡선 중앙을 가리키는 x 좌표 (약 130)
+        x_pos_center = 125
+        
+        # 꺽쇠의 모양 정의 (SVG path)
+        if chevron == '>':
+            # 오른쪽으로 향하는 전류 (시계방향의 뒤쪽에서 앞으로)
+            chevron_path = "M 12 5 L 19 12 L 12 19" 
+        else:
+            # 왼쪽으로 향하는 전류 (반시계방향의 뒤쪽에서 앞으로)
+            chevron_path = "M 19 5 L 12 12 L 19 19"
+        
+        # 꺽쇠가 도선 위에 겹치도록 SVG 태그 생성
+        chevron_svg = f"""
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{chevron_color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+             style="position:absolute; left: {x_pos_center-12}px; top: {y_pos+10}px; z-index: 10; pointer-events: none;">
+            <path d="{chevron_path}"></path>
+        </svg>
+        """
+
+
     winding_front_segments = []
     winding_front_segments.append(f"M {start_x} {wire_start_y}")
     for i in range(num_turns): 
@@ -103,7 +138,7 @@ def get_scene_html(motion, pole, animate=True):
         <path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
         <path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
-    # --- 유도력 화살표 (퀴즈 1 선택 결과) ---
+    # --- 유도력 화살표 (퀴즈 1 선택 결과) --- (생략: 기존 코드와 동일)
     force_arrow_size = 50 
     force_arrow_stroke_width = 3 
     force_arrow_color = "#E94C3D"
@@ -111,7 +146,6 @@ def get_scene_html(motion, pole, animate=True):
     force_x_pos = 125 
     force_y_pos = 215
 
-    # step 1에서 quiz1_choice, step 2 이후부터는 force_arrow_fixed를 사용
     fixed_arrow = st.session_state.force_arrow_fixed if st.session_state.step >= 2 else st.session_state.quiz1_choice
     
     up_opacity_initial = 1 if fixed_arrow == 'Up' else 0
@@ -143,6 +177,7 @@ def get_scene_html(motion, pole, animate=True):
         
       {force_up_arrow_svg}
       {force_down_arrow_svg}
+      {chevron_svg} 
         
       <div style="position:relative; width:300px; height:160px; display:flex; justify-content:center;">
         <div style="
@@ -195,9 +230,10 @@ def handle_quiz1_choice(choice):
     st.session_state.quiz1_choice = choice
     st.session_state.force_arrow_fixed = choice
     st.session_state.step = 2
-    # 퀴즈 2 관련 상태 초기화
     st.session_state.quiz2_choice = None 
     st.session_state.quiz2_correct = False
+    st.session_state.quiz3_choice = None
+    st.session_state.quiz3_correct = False
     st.rerun()
 
 def handle_quiz2_choice_and_next(chosen_pole):
@@ -205,35 +241,44 @@ def handle_quiz2_choice_and_next(chosen_pole):
     st.session_state.quiz2_choice = chosen_pole
     
     if scenario["motion"] == "down":
-        # 가까워짐 -> 밀어내야 함 -> 같은 극
         correct_pole = scenario["pole"]
     else:
-        # 멀어짐 -> 끌어당겨야 함 -> 반대 극
         correct_pole = "S" if scenario["pole"] == "N" else "N"
 
-    # 정답 여부를 저장 (퀴즈 3에서 피드백 제공을 위해)
     st.session_state.quiz2_correct = (chosen_pole == correct_pole)
     
-    # 퀴즈 3으로 바로 이동
     st.session_state.step = 3
     st.rerun()
 
-
-def handle_quiz3_check(answer3, current):
-    """퀴즈 3 선택을 처리하고 다음 단계로 이동 또는 오류 메시지를 표시합니다."""
-    if answer3 == current:
-        st.session_state.step = 4
-        st.success("✅ 최종 정답입니다! 모든 단계를 정확히 이해했어요. 전자기 유도 현상을 완벽히 이해했네요 🎉")
+def handle_quiz3_choice_and_check(chosen_chevron):
+    """퀴즈 3 선택 (꺽쇠)을 처리하고 정답 여부를 확인한 후 다음 단계로 이동합니다."""
+    st.session_state.quiz3_choice = chosen_chevron
+    
+    # 퀴즈 2에서 유도된 자극 (top_pole) 계산
+    if scenario["motion"] == "down":
+        top_pole = scenario["pole"]
     else:
-        st.error(f"❌ 오답이에요. 퀴즈 ②의 결과에 오른손 법칙을 적용해 보세요. 정답은 **{current}**입니다.")
+        top_pole = "S" if scenario["pole"] == "N" else "N"
+        
+    # 오른손 법칙 적용: N극(엄지 위) -> 반시계방향, S극(엄지 아래) -> 시계방향
+    # 반시계방향(N극)일 때: 코일 앞쪽 도선 전류 방향은 왼쪽 (<)
+    # 시계방향(S극)일 때: 코일 앞쪽 도선 전류 방향은 오른쪽 (>)
+    
+    if top_pole == "N":
+        correct_chevron = '<' # 반시계방향
+    else: # top_pole == "S"
+        correct_chevron = '>' # 시계방향
+
+    st.session_state.quiz3_correct = (chosen_chevron == correct_chevron)
+    
+    # 퀴즈 4 (최종 결과) 단계로 바로 이동
+    st.session_state.step = 4
     st.rerun()
 
 
 # ---
 # 단계별 학습 진행
 # ---
-
-# 퀴즈 2 HTML 버튼 제거 후 쿼리 파라미터 처리 로직 삭제
 
 if st.session_state.step == 0:
     st.subheader("🎬 상황 관찰하기")
@@ -248,6 +293,8 @@ if st.session_state.step == 0:
         st.session_state.quiz1_choice = None 
         st.session_state.quiz2_choice = None
         st.session_state.quiz2_correct = False
+        st.session_state.quiz3_choice = None
+        st.session_state.quiz3_correct = False
         st.rerun()
 
 elif st.session_state.step == 1:
@@ -277,21 +324,18 @@ elif st.session_state.step == 2:
     
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
     
-    # 퀴즈 1 피드백
     correct_dir = "Up" if scenario["motion"] == "down" else "Down"
     chosen_dir = st.session_state.force_arrow_fixed
     
     if chosen_dir != correct_dir:
-        st.error(f"❌ 퀴즈 ① 오답! 렌츠의 법칙은 자속 변화를 **'방해'**합니다. 올바른 힘의 방향은 **{'위쪽(밀어냄)' if correct_dir == 'Up' else '아래쪽(끌어당김)'}**입니다.")
+        st.error(f"❌ 퀴즈 ① 오답! 올바른 힘의 방향은 **{'위쪽' if correct_dir == 'Up' else '아래쪽'}**입니다.")
     else:
         st.success(f"✅ 퀴즈 ① 정답! 코일은 자석의 움직임을 **{'밀어내기 위해 위쪽' if chosen_dir == 'Up' else '끌어당기기 위해 아래쪽'}**으로 힘을 가합니다.")
 
     st.markdown("**코일 윗면에 유도되는 자극을 선택하세요 (선택 즉시 다음 단계로 이동):**")
     
-    # 퀴즈 2 시각화 (순수 이미지)
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
     
-    # ***안정성을 위한 Streamlit 네이티브 버튼 사용***
     col_n, col_s = st.columns(2)
     with col_n:
         st.button("N극", 
@@ -308,45 +352,69 @@ elif st.session_state.step == 2:
                   type="primary",
                   key="quiz2_S")
 
-
 elif st.session_state.step == 3:
     st.subheader("퀴즈 ③: 코일에 유도되는 전류 방향")
     
-    # 퀴즈 2에서 유도된 자극 (top_pole) 계산 (재연산 필요)
+    # 퀴즈 2 피드백 제공
     if scenario["motion"] == "down":
         top_pole = scenario["pole"]
     else:
         top_pole = "S" if scenario["pole"] == "N" else "N"
         
-    # 퀴즈 2 피드백 제공
     if st.session_state.quiz2_correct:
         st.success(f"✅ 퀴즈 ② 정답! 코일 윗면은 **{top_pole}극**이 유도되었습니다.")
     else:
         st.error(f"❌ 퀴즈 ② 오답. 렌츠의 법칙에 따라 코일 윗면은 **{top_pole}극**이 유도되어야 합니다.")
         
-    # 오른손 법칙 적용
-    if top_pole == "N":
-        current = "반시계방향"
-    else: # top_pole == "S"
-        current = "시계방향"
-        
+    st.warning("💡 **오른손 법칙**: 유도된 자극(퀴즈 ② 결과)을 오른손 엄지손가락으로 가리키고 코일을 감싸쥐세요. 네 손가락 방향이 전류의 방향입니다.")
+    st.markdown("**코일 앞쪽 도선(가장 가까운 세로 선)의 전류 방향을 선택하세요 (선택 즉시 결과 보기):**")
+
+    # 시각화 (선택 전에는 꺽쇠 없음)
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
         
-    st.warning("💡 **오른손 법칙**: 유도된 자극(퀴즈 ② 결과)을 오른손 엄지손가락으로 가리키고 코일을 감싸쥐면, 네 손가락 방향이 전류의 방향입니다.")
-
-    options = ["시계방향", "반시계방향"]
-    answer3 = st.radio("전류의 방향을 선택하세요 (코일 위에서 바라본 방향)", options, key="radio_quiz3")
-    
-    st.button("결과 보기 🎯", 
-              on_click=handle_quiz3_check, 
-              args=(answer3, current), 
-              key="btn_check_quiz3")
+    col_left, col_right = st.columns(2)
+    with col_left:
+        # 왼쪽 꺽쇠: 반시계방향 (코일 앞쪽 도선이 왼쪽으로 흐름)
+        st.button("왼쪽 (<)", 
+                  on_click=handle_quiz3_choice_and_check, 
+                  args=('<',), 
+                  use_container_width=True,
+                  type="secondary",
+                  key="quiz3_left")
+    with col_right:
+        # 오른쪽 꺽쇠: 시계방향 (코일 앞쪽 도선이 오른쪽으로 흐름)
+        st.button("오른쪽 (>)", 
+                  on_click=handle_quiz3_choice_and_check, 
+                  args=('>',), 
+                  use_container_width=True,
+                  type="secondary",
+                  key="quiz3_right")
         
 elif st.session_state.step == 4:
     st.subheader("✅ 학습 완료")
-    st.success("축하합니다! 전자기 유도 현상(렌츠의 법칙)의 세 단계를 모두 정확히 이해하고 적용했습니다.")
+    
+    # 최종 결과 요약
+    if scenario["motion"] == "down":
+        top_pole = scenario["pole"]
+    else:
+        top_pole = "S" if scenario["pole"] == "N" else "N"
+        
+    if top_pole == "N":
+        correct_chevron = '<' # 반시계
+        correct_current_text = "반시계방향 (앞쪽 도선: 왼쪽 <)"
+    else: # top_pole == "S"
+        correct_chevron = '>' # 시계
+        correct_current_text = "시계방향 (앞쪽 도선: 오른쪽 >)"
+    
+    # 퀴즈 3 피드백
+    if st.session_state.quiz3_correct:
+        st.success(f"✅ 퀴즈 ③ 최종 정답! 코일의 전류 방향은 **{correct_current_text}**입니다.")
+    else:
+        st.error(f"❌ 퀴즈 ③ 오답. 올바른 전류 방향은 **{correct_current_text}**입니다.")
+        
     st.markdown(f"**풀이한 상황:** {scenario['desc']}")
     
+    # 최종 시각화 (선택된 꺽쇠 표시)
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
     
     if st.button("새로운 상황으로 다시 시작"):
@@ -360,4 +428,6 @@ elif st.session_state.step == 4:
         st.session_state.quiz1_choice = None
         st.session_state.quiz2_choice = None
         st.session_state.quiz2_correct = False
+        st.session_state.quiz3_choice = None
+        st.session_state.quiz3_correct = False
         st.rerun()
