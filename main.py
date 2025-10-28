@@ -1,5 +1,6 @@
 import streamlit as st
 import random
+import uuid
 
 st.set_page_config(page_title="전자기 유도 학습", layout="centered")
 
@@ -24,21 +25,22 @@ if "step" not in st.session_state:
 if "scenario" not in st.session_state:
     # 딕셔너리의 키 중에서 랜덤으로 시나리오 선택
     st.session_state.scenario = random.choice(list(scenarios.keys()))
+if "quiz1_result" not in st.session_state:
+    st.session_state.quiz1_result = None
 
 scenario = scenarios[st.session_state.scenario]
 
 
-def draw_scene(motion, pole, animate=True):
+def get_scene_html(motion, pole, animate=True):
     """
-    자석의 움직임과 극성을 시각화하는 HTML/CSS 코드를 생성하여 Streamlit에 렌더링합니다.
-    자석의 움직임은 CSS 애니메이션으로 구현됩니다.
+    자석의 움직임과 극성을 시각화하는 HTML/CSS 코드를 생성하여 반환합니다.
     """
     pole_color = "red" if pole == "N" else "blue"
     
     # 자석이 가까워지는 경우 (down)는 아래로 80px 이동, 멀어지는 경우 (up)는 위로 -80px 이동
     move_dir = "80px" if motion == "down" else "-80px"
     
-    # 화살표 SVG 정의
+    # 화살표 SVG 정의 (자석의 움직임)
     arrow_color = "#4CAF50" # 초록색 화살표
     arrow_size = 40
     arrow_offset_x = 70 # 자석 오른쪽으로 offset
@@ -140,10 +142,35 @@ def draw_scene(motion, pole, animate=True):
         <!-- 이탈선 (수평 직선) --><path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
     # =================================================================
+
+    # Force Arrow SVGs (퀴즈 1의 유도력 미리보기용 - 숨겨진 상태)
+    force_y_pos = coil_top_y - 30 # Y=100
+    force_arrow_color = "#E94C3D" 
+    force_arrow_size = 50
+
+    # Upward force arrow (Hidden by default, ID for JS targeting)
+    force_up_arrow_svg = f"""
+    <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+         style="position:absolute; left:calc(50% - {force_arrow_size/2}px); top: {force_y_pos}px; transform: translateX(-75px); opacity:0; pointer-events: none; transition: opacity 0.1s;">
+        <line x1="12" y1="19" x2="12" y2="5"></line>
+        <polyline points="5 12 12 5 19 12"></polyline>
+    </svg>
+    """
+    # Downward force arrow (Hidden by default, ID for JS targeting)
+    force_down_arrow_svg = f"""
+    <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+         style="position:absolute; left:calc(50% - {force_arrow_size/2}px); top: {force_y_pos}px; transform: translateX(-75px); opacity:0; pointer-events: none; transition: opacity 0.1s;">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <polyline points="5 12 12 19 19 12"></polyline>
+    </svg>
+    """
     
     # 자석의 색깔, 극성, 애니메이션을 포함한 HTML 구조
     html = f"""
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px;">
+    <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative;">
+        
+      {force_up_arrow_svg}
+      {force_down_arrow_svg}
         
       <!-- 자석 컨테이너 --><div style="display:flex; align-items:center; justify-content:center; position:relative; top:0;">
         <div style="
@@ -183,7 +210,7 @@ def draw_scene(motion, pole, animate=True):
     }}
     </style>
     """
-    st.components.v1.html(html, height=520)
+    return html
 
 
 # 단계별 학습 진행
@@ -191,48 +218,151 @@ if st.session_state.step == 0:
     st.subheader("🎬 상황 관찰하기")
     st.info("랜덤으로 선택된 상황을 관찰하고, 렌츠의 법칙에 따라 코일에 유도되는 현상을 예측해 보세요.")
     st.write(f"**현재 상황:** **{scenario['desc']}**")
-    draw_scene(scenario["motion"], scenario["pole"], animate=True)
+    
+    # 0단계는 기존 방식대로 HTML 렌더링
+    st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
+    
     if st.button("퀴즈 시작하기 ➡️"):
         st.session_state.step = 1
+        st.session_state.quiz1_result = None # Reset result
+        st.query_params.clear() # Clear any residual query params
         st.rerun()
 
 elif st.session_state.step == 1:
     st.subheader("퀴즈 ①: 코일이 자석에 가하는 자기력 방향")
-    # 퀴즈 화면에도 애니메이션 적용 (첫 화면과 동일한 배율/위치)
-    draw_scene(scenario["motion"], scenario["pole"], animate=True)
     
     # 렌츠의 법칙: 변화를 방해하는 방향으로 자기력 작용
     correct_dir = "Up" if scenario["motion"] == "down" else "Down"
     correct_text = "위쪽(밀어냄)" if correct_dir == "Up" else "아래쪽(끌어당김)"
     
     st.warning("💡 렌츠의 법칙: 자속 변화를 '방해'하는 방향으로 유도 자기장이 형성됩니다.")
-    st.markdown("**코일이 자석에 가하는 힘의 방향을 선택하세요:**")
+    st.markdown("**코일이 자석에 가하는 힘의 방향을 선택하세요 (마우스 커서를 올려 미리보기가 가능합니다):**")
     
-    # 화살표 이미지를 사용하는 버튼으로 변경
-    col1, col2 = st.columns(2)
+    unique_key = str(uuid.uuid4())
     
-    up_button = col1.button("⬆️ 위쪽 힘", use_container_width=True, key="quiz1_up")
-    down_button = col2.button("⬇️ 아래쪽 힘", use_container_width=True, key="quiz1_down")
+    # HTML Component for combined visualization, buttons, and hover logic
+    quiz1_full_html = f"""
+    <!-- HTML Form Submission for Streamlit state management -->
+    <form method="get" action="" id="quiz-form-{unique_key}">
+        <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
+            
+            <input type="hidden" name="choice" id="choice-input-{unique_key}" value="" />
+            
+            <!-- 버튼 컨테이너 -->
+            <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
+                <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
+                    <button 
+                        type="button" 
+                        class="quiz-button" 
+                        data-choice="Up"
+                    >
+                        ⬆️ 위쪽 힘
+                    </button>
+                </div>
+                <div id="down-choice" class="quiz-choice-wrapper" style="width: 45%;">
+                    <button 
+                        type="button" 
+                        class="quiz-button" 
+                        data-choice="Down"
+                    >
+                        ⬇️ 아래쪽 힘
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 시각화 영역: Force Arrow SVGs를 포함하고 있음 -->
+            <div id="visualization-area">
+                {get_scene_html(scenario["motion"], scenario["pole"], animate=True)}
+            </div>
+        </div>
+        
+        <style>
+            /* 버튼 스타일 */
+            .quiz-button {{
+                background-color: #f0f2f6;
+                color: #262730;
+                border: 1px solid #ccc;
+                border-radius: 0.5rem;
+                padding: 0.5rem 1rem;
+                width: 100%;
+                cursor: pointer;
+                font-size: 1rem;
+                font-weight: 600;
+                transition: background-color 0.2s, box-shadow 0.2s;
+            }}
+            .quiz-button:hover {{
+                background-color: #e0e0e0;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            #up-choice button {{
+                border: 2px solid #3b82f6; /* Up color hint */
+            }}
+            #down-choice button {{
+                border: 2px solid #ef4444; /* Down color hint */
+            }}
+            .quiz-choice-wrapper {{
+                margin-bottom: 20px;
+            }}
+        </style>
+        <script>
+            // JS to handle hover events and control the force arrows opacity
+            const upButton = document.querySelector('#up-choice button');
+            const downButton = document.querySelector('#down-choice button');
+            const forceUp = document.getElementById('force-up');
+            const forceDown = document.getElementById('force-down');
+            const choiceInput = document.getElementById('choice-input-{unique_key}');
+            const quizForm = document.getElementById('quiz-form-{unique_key}');
+            
+            if (upButton && forceUp) {{
+                upButton.addEventListener('mouseover', () => {{ forceUp.style.opacity = '1'; }});
+                upButton.addEventListener('mouseout', () => {{ forceUp.style.opacity = '0'; }});
+                upButton.addEventListener('click', () => {{ 
+                    choiceInput.value = 'Up'; 
+                    quizForm.submit();
+                }});
+            }}
+            
+            if (downButton && forceDown) {{
+                downButton.addEventListener('mouseover', () => {{ forceDown.style.opacity = '1'; }});
+                downButton.addEventListener('mouseout', () => {{ forceDown.style.opacity = '0'; }});
+                downButton.addEventListener('click', () => {{ 
+                    choiceInput.value = 'Down'; 
+                    quizForm.submit();
+                }});
+            }}
+        </script>
+    </form>
+    """
     
-    chosen_dir = None
-    if up_button:
-        chosen_dir = "Up"
-    elif down_button:
-        chosen_dir = "Down"
-
-    if chosen_dir:
+    st.components.v1.html(quiz1_full_html, height=520 + 100) # Give extra height for buttons/padding
+    
+    # Check for the submitted choice in query parameters
+    query_params = st.query_params
+    
+    chosen_dir = query_params.get("choice")
+    
+    if chosen_dir and st.session_state.quiz1_result is None:
+        # Process the selection
         if chosen_dir == correct_dir:
+            st.session_state.quiz1_result = "Correct"
             st.session_state.step = 2
             st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다.")
         else:
+            st.session_state.quiz1_result = "Incorrect"
             st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다.")
+        
+        # Clear the query parameter after processing to avoid continuous reruns
+        if "choice" in st.query_params:
+            del st.query_params["choice"]
         st.rerun()
+
+    # If the user answered incorrectly on a previous run, display the error message again
+    if st.session_state.quiz1_result == "Incorrect":
+        st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다.")
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
-    # 퀴즈 화면에도 애니메이션 적용 (첫 화면과 동일한 배율/위치)
-    draw_scene(scenario["motion"], scenario["pole"], animate=True)
-
+    
     # 유도되는 극성 계산 (퀴즈 1의 결과와 일치)
     if scenario["motion"] == "down": # 가까워지면 밀어내야 하므로 같은 극
         top_pole = scenario["pole"]
@@ -240,6 +370,9 @@ elif st.session_state.step == 2:
     else: # 멀어지면 끌어당겨야 하므로 반대 극
         top_pole = "S" if scenario["pole"] == "N" else "N"
         explanation = f"자석의 {scenario['pole']}극이 멀어지므로, 코일 윗면은 **끌어당기기 위해** 반대 극인 {top_pole}극이 됩니다."
+
+    # 시각화 HTML 렌더링
+    st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
 
     options = ["윗면이 N극", "윗면이 S극"]
     answer2 = st.radio("코일의 윗면 자극을 선택하세요", options)
@@ -255,14 +388,15 @@ elif st.session_state.step == 2:
 
 elif st.session_state.step == 3:
     st.subheader("퀴즈 ③: 코일에 유도되는 전류 방향")
-    # 퀴즈 화면에도 애니메이션 적용 (첫 화면과 동일한 배율/위치)
-    draw_scene(scenario["motion"], scenario["pole"], animate=True)
-
+    
     # 앙페르/오른손 법칙으로 전류 방향 계산
     if (scenario["motion"] == "down" and scenario["pole"] == "N") or (scenario["motion"] == "up" and scenario["pole"] == "S"):
         current = "반시계방향" # 윗면이 N극인 경우
     else:
         current = "시계방향" # 윗면이 S극인 경우
+        
+    # 시각화 HTML 렌더링
+    st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
         
     st.warning("💡 오른손 법칙: 유도된 자극(퀴즈 ② 결과)을 오른손 엄지손가락으로 가리키고 코일을 감싸쥐면, 네 손가락 방향이 전류의 방향입니다.")
     options = ["시계방향", "반시계방향"]
@@ -280,8 +414,9 @@ elif st.session_state.step == 4:
     st.subheader("✅ 학습 완료")
     st.success("축하합니다! 전자기 유도 현상(렌츠의 법칙)의 세 단계를 모두 정확히 이해하고 적용했습니다.")
     st.markdown(f"**풀이한 상황:** {scenario['desc']}")
-    # 완료 화면에도 애니메이션 적용 (첫 화면과 동일한 배율/위치)
-    draw_scene(scenario["motion"], scenario["pole"], animate=True)
+    
+    # 시각화 HTML 렌더링
+    st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
     
     if st.button("새로운 상황으로 다시 시작"):
         st.session_state.step = 0
