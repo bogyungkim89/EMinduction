@@ -73,6 +73,38 @@ def draw_scene(motion, pole, animate=True):
     }}
     """
     
+    # =================================================================
+    # 코일 감은 선 (시계방향 헬릭스 Path) 생성
+    # -----------------------------------------------------------------
+    winding_segments = []
+    start_y = 135
+    start_x = 210 # 코일 오른쪽 끝에서 시작
+
+    winding_segments.append(f"M {start_x} {start_y}") # 시작점 (210, 135)
+
+    # 5개의 완전한 루프 (총 10개의 아크 세그먼트). Y는 5px씩 증가
+    # 시계방향 (Top View): 앞(오른쪽->왼쪽)은 아랫 호(sweep=1), 뒤(왼쪽->오른쪽)는 윗 호(sweep=0)
+    for i in range(10): 
+        y_target = start_y + (i + 1) * 5 
+        
+        if i % 2 == 0: 
+            # 짝수 (i=0, 2, 4...): Front Arc (Visible, Right to Left, Lower half, sweep-flag=1)
+            x_target = 50
+            arc = f"A 80 22 0 0 1 {x_target} {y_target}"
+        else:
+            # 홀수 (i=1, 3, 5...): Back Arc (Hidden, Left to Right, Upper half, sweep-flag=0)
+            x_target = 210
+            arc = f"A 80 22 0 0 0 {x_target} {y_target}"
+            
+        winding_segments.append(arc)
+
+    winding_path_d = " ".join(winding_segments)
+
+    winding_svg = f"""
+        <path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
+    """
+    # =================================================================
+    
     # 자석의 색깔, 극성, 애니메이션을 포함한 HTML 구조
     html = f"""
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px;">
@@ -96,11 +128,18 @@ def draw_scene(motion, pole, animate=True):
             {arrow_svg if animate else ''} <!-- 애니메이션 활성화 시에만 화살표 표시 --></div>
       </div>
 
-      <!-- 코일 (SVG를 사용하여 입체적으로 표현) --><svg width="260" height="240" viewBox="0 0 260 240" style="margin-top:-20px;">
-        <!-- 코일 윗면 타원 --><ellipse cx="130" cy="130" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
-        <!-- 코일 몸통 사각형 --><rect x="50" y="130" width="160" height="60" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
-        <!-- 코일 아랫면 타원 --><ellipse cx="130" cy="190" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
-        <!-- 코일 감은 선 (반복) -->{"".join([f'<line x1="50" y1="{135+i*5}" x2="210" y2="{135+i*5}" stroke="#cc6600" stroke-width="2"/>' for i in range(10)])}
+      <!-- 코일 (SVG를 사용하여 입체적으로 표현) -->
+      <svg width="260" height="240" viewBox="0 0 260 240" style="margin-top:-20px;">
+        <!-- 1. 코일 몸통 사각형 (배경) -->
+        <rect x="50" y="130" width="160" height="60" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
+        <!-- 2. 코일 아랫면 타원 (밑면) -->
+        <ellipse cx="130" cy="190" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+        
+        <!-- 3. 코일 감은 선 (시계방향 헬릭스) -->
+        {winding_svg}
+
+        <!-- 4. 코일 윗면 타원 (윗면/개구부) -->
+        <ellipse cx="130" cy="130" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
       </svg>
     </div>
 
