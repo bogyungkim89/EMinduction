@@ -75,33 +75,47 @@ def draw_scene(motion, pole, animate=True):
     
     # =================================================================
     # 코일 감은 선 (시계방향 헬릭스 Path) 생성
+    # 코일 높이 120px로 확장, 전선 간격 2배 (11px 간격, 5턴 유지)
     # -----------------------------------------------------------------
     winding_segments = []
-    start_y = 135
-    start_x = 210 # 코일 오른쪽 끝에서 시작
+    # 코일 몸통 Y 좌표: 130 ~ 250 (높이 120)
+    start_y = 135 # 코일 윗면 (Y=130)에서 5px 아래
+    step_y = 11   # 전선 간격 (2배 증가)
+    start_x = 210 # 코일 오른쪽 끝 (Rx=80, Center X=130. 130+80=210)
+    end_x = 50    # 코일 왼쪽 끝 (130-80=50)
 
-    winding_segments.append(f"M {start_x} {start_y}") # 시작점 (210, 135)
+    # 1. 오른쪽 전선 진입 (원통 오른쪽 바깥 (240, 135) -> 코일 시작점 (210, 135))
+    external_wire_in = f"M 240 135 L {start_x} {start_y}"
+    
+    winding_segments.append(f"M {start_x} {start_y}") # 코일 시작점 (210, 135)
 
-    # 5개의 완전한 루프 (총 10개의 아크 세그먼트). Y는 5px씩 증가
+    # 5개의 완전한 루프 (총 10개의 아크 세그먼트). Y는 11px씩 증가
     # 시계방향 (Top View): 앞(오른쪽->왼쪽)은 아랫 호(sweep=1), 뒤(왼쪽->오른쪽)는 윗 호(sweep=0)
     for i in range(10): 
-        y_target = start_y + (i + 1) * 5 
+        y_target = start_y + (i + 1) * step_y 
         
         if i % 2 == 0: 
             # 짝수 (i=0, 2, 4...): Front Arc (Visible, Right to Left, Lower half, sweep-flag=1)
-            x_target = 50
+            x_target = end_x
             arc = f"A 80 22 0 0 1 {x_target} {y_target}"
         else:
             # 홀수 (i=1, 3, 5...): Back Arc (Hidden, Left to Right, Upper half, sweep-flag=0)
-            x_target = 210
+            x_target = start_x
             arc = f"A 80 22 0 0 0 {x_target} {y_target}"
             
         winding_segments.append(arc)
 
     winding_path_d = " ".join(winding_segments)
 
+    # 2. 오른쪽 전선 빠져나감 (코일 뒷면 아래쪽 (210, 245) -> 오른쪽 (240, 245))
+    exit_y = start_y + 10 * step_y # 245
+    external_wire_out = f"M {start_x} {exit_y} L 240 {exit_y}" 
+    
+    # 헬릭스 Path 및 외부 연결선 통합
     winding_svg = f"""
+        <path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
         <path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
     # =================================================================
     
@@ -128,17 +142,17 @@ def draw_scene(motion, pole, animate=True):
             {arrow_svg if animate else ''} <!-- 애니메이션 활성화 시에만 화살표 표시 --></div>
       </div>
 
-      <!-- 코일 (SVG를 사용하여 입체적으로 표현) -->
-      <svg width="260" height="240" viewBox="0 0 260 240" style="margin-top:-20px;">
-        <!-- 1. 코일 몸통 사각형 (배경) -->
-        <rect x="50" y="130" width="160" height="60" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
-        <!-- 2. 코일 아랫면 타원 (밑면) -->
-        <ellipse cx="130" cy="190" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+      <!-- 코일 (SVG를 사용하여 입체적으로 표현) - 높이 360으로 증가 -->
+      <svg width="260" height="360" viewBox="0 0 260 360" style="margin-top:-20px;">
+        <!-- 1. 코일 몸통 사각형 (배경) - 높이 120px (Y: 130~250) -->
+        <rect x="50" y="130" width="160" height="120" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
+        <!-- 2. 코일 아랫면 타원 (밑면) - Y=250 -->
+        <ellipse cx="130" cy="250" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
         
-        <!-- 3. 코일 감은 선 (시계방향 헬릭스) -->
+        <!-- 3. 코일 감은 선 (시계방향 헬릭스 및 외부 연결선) -->
         {winding_svg}
 
-        <!-- 4. 코일 윗면 타원 (윗면/개구부) -->
+        <!-- 4. 코일 윗면 타원 (윗면/개구부) - Y=130 -->
         <ellipse cx="130" cy="130" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
       </svg>
     </div>
@@ -214,6 +228,10 @@ elif st.session_state.step == 3:
     # 앙페르/오른손 법칙으로 전류 방향 계산
     # 윗면이 N극 -> 반시계방향 (N극을 엄지손가락으로 감싸면)
     # 윗면이 S극 -> 시계방향 (S극을 엄지손가락으로 감싸면)
+    # **참고**: 현재 코일은 위에서 봤을 때 시계방향으로 감겨있으므로,
+    # 유도 전류 방향과 시각적 방향은 반대입니다.
+    # 윗면 N극 유도 시 -> 유도 자기장이 위로 향함 -> 엄지가 위로 (N극) -> 코일 감은 방향 기준 반시계
+    # 코일이 '시계방향'으로 감겨있다면, 유도 전류가 '반시계방향'일 때 시각적으로는 '올라가는' 방향의 전류가 생성됩니다. (오른손 법칙의 적용 결과는 그대로 유지)
     if (scenario["motion"] == "down" and scenario["pole"] == "N") or (scenario["motion"] == "up" and scenario["pole"] == "S"):
         current = "반시계방향" # 윗면이 N극인 경우
     else:
