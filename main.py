@@ -75,58 +75,66 @@ def draw_scene(motion, pole, animate=True):
     
     # =================================================================
     # 코일 감은 선 (시계방향 헬릭스 Path) 생성
-    # 코일 높이 180px로 확장 (1.5배), 전선 간격 1.5배 (16.5px 간격, 5턴 유지)
+    # - 원통 앞면 (보이는 부분)만 그립니다.
+    # - 코일 높이 180px, 전선 간격 16.5px (5턴)
     # -----------------------------------------------------------------
-    winding_segments = []
     
     # 코일 몸통 Y 좌표 설정: 높이 180px
     coil_height = 180
     coil_top_y = 130 # 코일 윗면 중심 Y 좌표
     coil_bottom_y = coil_top_y + coil_height # 310 (코일 아랫면 중심 Y 좌표)
 
-    start_y = coil_top_y + 5 # 135 (첫 코일 감기 시작 Y 좌표)
-    step_y = 16.5   # 전선 간격 (1.5배 증가)
+    # 전선 감기 시작 및 종료 Y 좌표 (코일 윗면/아랫면 타원 위/아래에서 시작/종료)
+    wire_start_y = coil_top_y + 10  # 윗면 타원 아래에서 시작 (130 + 10)
+    wire_end_y = coil_bottom_y - 10 # 아랫면 타원 위에서 종료 (310 - 10)
+
+    # 전선 간격 (총 5턴 = 4개의 간격 + 시작/끝)
+    num_turns = 5
+    # 전체 감기는 Y 범위 (wire_end_y - wire_start_y) 를 턴 수로 나눈다.
+    step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
+    
     start_x = 210 # 코일 오른쪽 끝 (Rx=80, Center X=130. 130+80=210)
     end_x = 50    # 코일 왼쪽 끝 (130-80=50)
 
     # 1. 오른쪽 전선 진입 (곡선 처리)
-    # (240, 100)에서 시작 -> Q 곡선으로 (210, 135)로 부드럽게 진입
-    external_wire_in = f"M 240 100 Q 225 100 {start_x} {start_y}"
+    # (240, 100)에서 시작 -> Q 곡선으로 (start_x, wire_start_y)로 부드럽게 진입
+    external_wire_in = f"M 240 {coil_top_y - 30} Q 225 {coil_top_y - 10} {start_x} {wire_start_y}"
     
-    winding_segments.append(f"M {start_x} {start_y}") # 코일 시작점 (210, 135)
+    winding_front_segments = []
+    # 코일 앞면 (오른쪽에서 왼쪽으로 아랫쪽 아크)만 그립니다.
+    # 시계방향 감기 -> 오른쪽에서 들어와서 앞면에서 오른쪽->왼쪽으로 내려감
+    
+    # 첫 아크 시작점
+    winding_front_segments.append(f"M {start_x} {wire_start_y}")
 
-    # 5개의 완전한 루프 (총 10개의 아크 세그먼트). Y는 16.5px씩 증가
-    # 시계방향 (Top View): 앞(오른쪽->왼쪽)은 아랫 호(sweep=1), 뒤(왼쪽->오른쪽)는 윗 호(sweep=0)
-    for i in range(10): 
-        y_target = start_y + (i + 1) * step_y # 최대 Y는 300
+    # 5개의 턴에 해당하는 앞면 아크를 그립니다.
+    for i in range(num_turns): 
+        current_y = wire_start_y + i * step_y 
+        next_y = wire_start_y + (i + 1) * step_y if i < num_turns -1 else wire_end_y
         
-        if i % 2 == 0: 
-            # 짝수: Front Arc (Visible, Right to Left, Lower half, sweep-flag=1)
-            x_target = end_x
-            arc = f"A 80 22 0 0 1 {x_target} {y_target}"
-        else:
-            # 홀수: Back Arc (Hidden, Left to Right, Upper half, sweep-flag=0)
-            x_target = start_x
-            arc = f"A 80 22 0 0 0 {x_target} {y_target}"
-            
-        winding_segments.append(arc)
+        # Front Arc (Visible, Right to Left, Lower half, sweep-flag=1)
+        # 현재 위치에서 왼쪽으로 (end_x) 다음 Y 위치로 이동하는 아크
+        arc = f"A 80 22 0 0 1 {end_x} {current_y}"
+        winding_front_segments.append(arc)
+        
+        if i < num_turns -1: # 마지막 턴이 아니면 다음 아크 시작점을 추가
+            winding_front_segments.append(f"M {end_x} {current_y} L {end_x} {next_y}") # 왼쪽 수직선 (뒷면이 가리는 부분)을 건너뛰고 다음 앞면 아크 시작점으로 이동
+            winding_front_segments.append(f"M {start_x} {next_y}") # 다음 앞면 아크 시작점으로 점프 (직접 연결하지 않고 끊어서 뒷면 가려진 부분 처리)
 
-    winding_path_d = " ".join(winding_segments)
+
+    winding_path_d = " ".join(winding_front_segments)
 
     # 2. 오른쪽 전선 빠져나감 (곡선 처리)
-    exit_y_coil = start_y + 10 * step_y # 300 (코일에서 빠져나오는 지점)
-    exit_y_end = 335 # 최종 출구 Y 좌표
-    # (210, 300)에서 시작 -> Q 곡선으로 (240, 335)로 부드럽게 빠져나감
-    external_wire_out = f"M {start_x} {exit_y_coil} Q 225 {exit_y_coil} 240 {exit_y_end}" 
+    exit_y_coil = wire_end_y # 코일에서 빠져나오는 지점 Y
+    exit_y_end = coil_bottom_y + 30 # 최종 출구 Y 좌표
+    # (start_x, exit_y_coil)에서 시작 -> Q 곡선으로 (240, exit_y_end)로 부드럽게 빠져나감
+    external_wire_out = f"M {start_x} {exit_y_coil} Q 225 {coil_bottom_y + 10} 240 {exit_y_end}" 
     
     # 헬릭스 Path 및 외부 연결선 통합
     winding_svg = f"""
-        <!-- 진입선 (곡선) -->
-        <path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
-        <!-- 코일 감은 부분 -->
-        <path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
-        <!-- 이탈선 (곡선) -->
-        <path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <!-- 진입선 (곡선) --><path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <!-- 코일 감은 부분 (앞면만) --><path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <!-- 이탈선 (곡선) --><path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
     # =================================================================
     
@@ -154,18 +162,13 @@ def draw_scene(motion, pole, animate=True):
             {arrow_svg if animate else ''} <!-- 애니메이션 활성화 시에만 화살표 표시 --></div>
       </div>
 
-      <!-- 코일 (SVG를 사용하여 입체적으로 표현) - 높이 400으로 증가 -->
-      <svg width="260" height="400" viewBox="0 0 260 400" style="margin-top:-20px;">
-        <!-- 1. 코일 몸통 사각형 (배경) - 높이 180px (Y: 130~310) -->
-        <rect x="50" y="{coil_top_y}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
-        <!-- 2. 코일 아랫면 타원 (밑면) - Y=310 -->
-        <ellipse cx="130" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+      <!-- 코일 (SVG를 사용하여 입체적으로 표현) - 높이 400으로 증가 --><svg width="260" height="400" viewBox="0 0 260 400" style="margin-top:-20px;">
+        <!-- 1. 코일 몸통 사각형 (배경) - 높이 180px (Y: 130~310) --><rect x="50" y="{coil_top_y}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
+        <!-- 2. 코일 아랫면 타원 (밑면) - Y=310 --><ellipse cx="130" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
         
-        <!-- 3. 코일 감은 선 (시계방향 헬릭스 및 외부 연결선) -->
-        {winding_svg}
+        <!-- 3. 코일 감은 선 (시계방향 헬릭스 및 외부 연결선) -->{winding_svg}
 
-        <!-- 4. 코일 윗면 타원 (윗면/개구부) - Y=130 -->
-        <ellipse cx="130" cy="{coil_top_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+        <!-- 4. 코일 윗면 타원 (윗면/개구부) - Y=130 --><ellipse cx="130" cy="{coil_top_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
       </svg>
     </div>
 
@@ -240,6 +243,10 @@ elif st.session_state.step == 3:
     # 앙페르/오른손 법칙으로 전류 방향 계산
     # 윗면이 N극 -> 반시계방향 (N극을 엄지손가락으로 감싸면)
     # 윗면이 S극 -> 시계방향 (S극을 엄지손가락으로 감싸면)
+    # **참고**: 현재 코일은 위에서 봤을 때 시계방향으로 감겨있으므로,
+    # 유도 전류 방향과 시각적 방향은 반대입니다.
+    # 윗면 N극 유도 시 -> 유도 자기장이 위로 향함 -> 엄지가 위로 (N극) -> 코일 감은 방향 기준 반시계
+    # 코일이 '시계방향'으로 감겨있다면, 유도 전류가 '반시계방향'일 때 시각적으로는 '올라가는' 방향의 전류가 생성됩니다. (오른손 법칙의 적용 결과는 그대로 유지)
     if (scenario["motion"] == "down" and scenario["pole"] == "N") or (scenario["motion"] == "up" and scenario["pole"] == "S"):
         current = "반시계방향" # 윗면이 N극인 경우
     else:
