@@ -39,13 +39,12 @@ def get_scene_html(motion, pole, animate=True):
     # 화살표 SVG 정의
     arrow_color = "#4CAF50"
     arrow_size = 40
-    # 복구: 원래 위치 (오른쪽으로 70px 떨어짐)
     arrow_offset_x = 70
     
     if motion == "down":
         arrow_svg = f"""
         <svg width="{arrow_size}" height="{arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{arrow_color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-             style="position:absolute; right:-{arrow_offset_x}px; top:calc(50% - {arrow_size/2}px);"><br>
+             style="position:absolute; right:-{arrow_offset_x}px; top:calc(50% - {arrow_size/2}px);">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <polyline points="5 12 12 19 19 12"></polyline>
         </svg>
@@ -53,7 +52,7 @@ def get_scene_html(motion, pole, animate=True):
     else:
         arrow_svg = f"""
         <svg width="{arrow_size}" height="{arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{arrow_color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-             style="position:absolute; right:-{arrow_offset_x}px; top:calc(50% - {arrow_size/2}px);"><br>
+             style="position:absolute; right:-{arrow_offset_x}px; top:calc(50% - {arrow_size/2}px);">
             <line x1="12" y1="19" x2="12" y2="5"></line>
             <polyline points="5 12 12 5 19 12"></polyline>
         </svg>
@@ -117,7 +116,7 @@ def get_scene_html(motion, pole, animate=True):
 
     force_up_arrow_svg = f"""
     <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{up_opacity}; pointer-events: none; transition: opacity 0.1s;"><br>
+          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{up_opacity}; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="19" x2="12" y2="5"></line>
         <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
@@ -125,58 +124,57 @@ def get_scene_html(motion, pole, animate=True):
 
     force_down_arrow_svg = f"""
     <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{down_opacity}; pointer-events: none; transition: opacity 0.1s;"><br>
+          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{down_opacity}; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <polyline points="5 12 12 19 19 12"></polyline>
     </svg>
     """
     
     # 자석 위치: 전체 컨테이너 중심(150px)에 자석 너비의 절반(40px)을 빼서 중앙 정렬
-    # 복구: 원래 위치 (중심 정렬)
     magnet_left_position = 110  # 150 - 40 = 110px
     
     html = f"""
-    <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative; width: 300px; margin-left: auto; margin-right: auto;"><br>
-        <br>
-      {force_up_arrow_svg}<br>
-      {force_down_arrow_svg}<br>
-        <br>
-      <div style="position:relative; width:300px; height:160px; display:flex; justify-content:center;"><br>
-        <div style="<br>
-            width:80px; height:160px;<br>
-            background:#ccc; border:4px solid #222; border-radius:10px;<br>
-            display:flex; align-items:flex-end; justify-content:center;<br>
-            position:absolute;<br>
-            left: {magnet_left_position}px;<br>
-            animation:{'floatMove 3s ease-in-out infinite' if animate else 'none'};"><br>
-            <br>
-            <div style="<br>
-                font-size:56px; font-weight:bold; <br>
-                color:{pole_color}; <br>
-                margin-bottom:2px;<br>
-                text-shadow: 1px 1px 2px rgba(0,0,0,0.3);"><br>
-                {pole}<br>
+    <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative; width: 300px; margin-left: auto; margin-right: auto;">
+        
+      {force_up_arrow_svg}
+      {force_down_arrow_svg}
+        
+      <div style="position:relative; width:300px; height:160px; display:flex; justify-content:center;">
+        <div style="
+            width:80px; height:160px;
+            background:#ccc; border:4px solid #222; border-radius:10px;
+            display:flex; align-items:flex-end; justify-content:center;
+            position:absolute;
+            left: {magnet_left_position}px;
+            animation:{'floatMove 3s ease-in-out infinite' if animate else 'none'};">
+            
+            <div style="
+                font-size:56px; font-weight:bold; 
+                color:{pole_color}; 
+                margin-bottom:2px;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
+                {pole}
             </div>
-            {arrow_svg if animate else ''}<br>
-        </div><br>
-      </div><br>
+            {arrow_svg if animate else ''}
+        </div>
+      </div>
 
-      <svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;"><br>
-        <rect x="50" y="{coil_top_y_svg}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/><br>
-        <ellipse cx="130" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/><br>
-        <br>
-        {winding_svg}<br>
+      <svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
+        <rect x="50" y="{coil_top_y_svg}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
+        <ellipse cx="130" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+        
+        {winding_svg}
 
-        <ellipse cx="130" cy="{coil_top_y_svg}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/><br>
-      </svg><br>
-    </div><br>
+        <ellipse cx="130" cy="{coil_top_y_svg}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+      </svg>
+    </div>
 
-    <style><br>
-    {anim}<br>
-    div {{<br>
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";<br>
-    }}<br>
-    </style><br>
+    <style>
+    {anim}
+    div {{
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }}
+    </style>
     """
     return html
 
@@ -205,121 +203,121 @@ elif st.session_state.step == 1:
     unique_key = str(uuid.uuid4())
     
     quiz1_full_html = f"""
-    <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;"><br>
-        <br>
-        <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;"><br>
-            <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;"><br>
-                <button type="button" class="quiz-button" data-choice="Up"><br>
-                    ⬆️ 위쪽 힘<br>
-                </button><br>
-            </div><br>
-            <div id="down-choice" class="quiz-choice-wrapper" style="width: 45%;"><br>
-                <button type="button" class="quiz-button" data-choice="Down"><br>
-                    ⬇️ 아래쪽 힘<br>
-                </button><br>
-            </div><br>
-        </div><br>
-        <br>
-        <div id="visualization-area"><br>
-            {get_scene_html(scenario["motion"], scenario["pole"], animate=True)}<br>
-        </div><br>
-    </div><br>
-    <br>
-    <style><br>
-        .quiz-button {{<br>
-            background-color: #f0f2f6;<br>
-            color: #262730;<br>
-            border: 1px solid #ccc;<br>
-            border-radius: 0.5rem;<br>
-            padding: 0.5rem 1rem;<br>
-            width: 100%;<br>
-            cursor: pointer;<br>
-            font-size: 1rem;<br>
-            font-weight: 600;<br>
-            transition: background-color 0.2s, box-shadow 0.2s;<br>
-        }}<br>
-        .quiz-button:hover {{<br>
-            background-color: #e0e0e0;<br>
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);<br>
-        }}<br>
-        .quiz-button.is-active {{<br>
-            box-shadow: 0 0 0 3px #1f77b4;<br>
-            background-color: #dbeafe;<br>
-        }}<br>
-        #up-choice button {{<br>
-            border: 2px solid #3b82f6;<br>
-        }}<br>
-        #down-choice button {{<br>
-            border: 2px solid #ef4444;<br>
-        }}<br>
-    </style><br>
-    <br>
-    <script><br>
-        const upButton = document.querySelector('#up-choice button');<br>
-        const downButton = document.querySelector('#down-choice button');<br>
-        const forceUp = document.getElementById('force-up');<br>
-        const forceDown = document.getElementById('force-down');<br>
-        <br>
-        // 마우스 오버: 화살표 미리보기 (선택되지 않은 경우에만)<br>
-        const handleMouseOver = (forceElement) => {{<br>
-            if (!document.querySelector('.quiz-button.is-active')) {{<br>
-                forceElement.style.opacity = '1';<br>
-            }}<br>
-        }};<br>
-        <br>
-        // 마우스 아웃: 화살표 숨기기 (선택되지 않은 경우에만)<br>
-        const handleMouseOut = (forceElement) => {{<br>
-            if (!document.querySelector('.quiz-button.is-active')) {{<br>
-                forceElement.style.opacity = '0';<br>
-            }}<br>
-        }};<br>
-        <br>
-        // 클릭: 화살표 고정 및 버튼 활성화<br>
-        const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{<br>
-            // 화살표 표시 고정<br>
-            forceElement.style.opacity = '1';<br>
-            otherForceElement.style.opacity = '0';<br>
-            <br>
-            // 버튼 활성화 상태 표시<br>
-            document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));<br>
-            buttonElement.classList.add('is-active');<br>
-            <br>
-            // Streamlit 상태에 저장<br>
-            window.parent.postMessage({{<br>
-                type: 'streamlit:setComponentValue',<br>
-                value: choice<br>
-            }}, '*');<br>
-        }};<br>
-        <br>
-        // 이벤트 리스너 설정<br>
-        if (upButton && forceUp) {{<br>
-            upButton.addEventListener('mouseover', () => handleMouseOver(forceUp));<br>
-            upButton.addEventListener('mouseout', () => handleMouseOut(forceUp));<br>
-            upButton.addEventListener('click', () => {{ <br>
-                handleClick('Up', forceUp, forceDown, upButton);<br>
-            }});<br>
-        }}<br>
-        <br>
-        if (downButton && forceDown) {{<br>
-            downButton.addEventListener('mouseover', () => handleMouseOver(forceDown));<br>
-            downButton.addEventListener('mouseout', () => handleMouseOut(forceDown));<br>
-            downButton.addEventListener('click', () => {{ <br>
-                handleClick('Down', forceDown, forceUp, downButton);<br>
-            }});<br>
-        }}<br>
-        <br>
-        // 초기 상태 복원 (이전에 선택한 것이 있으면)<br>
-        const fixedState = "{st.session_state.force_arrow_fixed}";<br>
-        if (fixedState === 'Up') {{<br>
-            forceUp.style.opacity = '1';<br>
-            forceDown.style.opacity = '0';<br>
-            upButton.classList.add('is-active');<br>
-        }} else if (fixedState === 'Down') {{<br>
-            forceDown.style.opacity = '1';<br>
-            forceUp.style.opacity = '0';<br>
-            downButton.classList.add('is-active');<br>
-        }}<br>
-    </script><br>
+    <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
+        
+        <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
+            <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
+                <button type="button" class="quiz-button" data-choice="Up">
+                    ⬆️ 위쪽 힘
+                </button>
+            </div>
+            <div id="down-choice" class="quiz-choice-wrapper" style="width: 45%;">
+                <button type="button" class="quiz-button" data-choice="Down">
+                    ⬇️ 아래쪽 힘
+                </button>
+            </div>
+        </div>
+        
+        <div id="visualization-area">
+            {get_scene_html(scenario["motion"], scenario["pole"], animate=True)}
+        </div>
+    </div>
+    
+    <style>
+        .quiz-button {{
+            background-color: #f0f2f6;
+            color: #262730;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            width: 100%;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }}
+        .quiz-button:hover {{
+            background-color: #e0e0e0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }}
+        .quiz-button.is-active {{
+            box-shadow: 0 0 0 3px #1f77b4;
+            background-color: #dbeafe;
+        }}
+        #up-choice button {{
+            border: 2px solid #3b82f6;
+        }}
+        #down-choice button {{
+            border: 2px solid #ef4444;
+        }}
+    </style>
+    
+    <script>
+        const upButton = document.querySelector('#up-choice button');
+        const downButton = document.querySelector('#down-choice button');
+        const forceUp = document.getElementById('force-up');
+        const forceDown = document.getElementById('force-down');
+        
+        // 마우스 오버: 화살표 미리보기 (선택되지 않은 경우에만)
+        const handleMouseOver = (forceElement) => {{
+            if (!document.querySelector('.quiz-button.is-active')) {{
+                forceElement.style.opacity = '1';
+            }}
+        }};
+        
+        // 마우스 아웃: 화살표 숨기기 (선택되지 않은 경우에만)
+        const handleMouseOut = (forceElement) => {{
+            if (!document.querySelector('.quiz-button.is-active')) {{
+                forceElement.style.opacity = '0';
+            }}
+        }};
+        
+        // 클릭: 화살표 고정 및 버튼 활성화
+        const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
+            // 화살표 표시 고정
+            forceElement.style.opacity = '1';
+            otherForceElement.style.opacity = '0';
+            
+            // 버튼 활성화 상태 표시
+            document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
+            buttonElement.classList.add('is-active');
+            
+            // Streamlit 상태에 저장
+            window.parent.postMessage({{
+                type: 'streamlit:setComponentValue',
+                value: choice
+            }}, '*');
+        }};
+        
+        // 이벤트 리스너 설정
+        if (upButton && forceUp) {{
+            upButton.addEventListener('mouseover', () => handleMouseOver(forceUp));
+            upButton.addEventListener('mouseout', () => handleMouseOut(forceUp));
+            upButton.addEventListener('click', () => {{ 
+                handleClick('Up', forceUp, forceDown, upButton);
+            }});
+        }}
+        
+        if (downButton && forceDown) {{
+            downButton.addEventListener('mouseover', () => handleMouseOver(forceDown));
+            downButton.addEventListener('mouseout', () => handleMouseOut(forceDown));
+            downButton.addEventListener('click', () => {{ 
+                handleClick('Down', forceDown, forceUp, downButton);
+            }});
+        }}
+        
+        // 초기 상태 복원 (이전에 선택한 것이 있으면)
+        const fixedState = "{st.session_state.force_arrow_fixed}";
+        if (fixedState === 'Up') {{
+            forceUp.style.opacity = '1';
+            forceDown.style.opacity = '0';
+            upButton.classList.add('is-active');
+        }} else if (fixedState === 'Down') {{
+            forceDown.style.opacity = '1';
+            forceUp.style.opacity = '0';
+            downButton.classList.add('is-active');
+        }}
+    </script>
     """
     
     # HTML 컴포넌트로부터 선택값 받기
