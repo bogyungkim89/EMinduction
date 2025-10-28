@@ -81,7 +81,7 @@ def get_scene_html(motion, pole, animate=True):
     
     # 코일 몸통 Y 좌표 설정: 높이 180px
     coil_height = 180
-    coil_top_y_svg = 130 # 코일 윗면 중심 Y 좌표
+    coil_top_y_svg = 130 # 코일 윗면 중심 Y 좌표 (scene-visualization 컨테이너 기준)
     coil_bottom_y = coil_top_y_svg + coil_height # 310 (코일 아랫면 중심 Y 좌표)
     
     # 전선 감기 시작 Y 좌표 (위쪽 외부 전선 Y 좌표)
@@ -154,11 +154,12 @@ def get_scene_html(motion, pole, animate=True):
     # X 위치: 코일 중심 (130)에 화살표 중심 (25)이 오도록 (130 - 25 = 105)
     force_x_pos = 105
     
-    # Y 위치: 코일 윗면 (130)에 화살표 아랫부분이 오도록 (130 - 50 = 80)
-    force_y_pos = coil_top_y_svg - force_arrow_size 
+    # Y 위치: 코일의 원통 그림 윗부분 (Y=130부터 시작)에 겹치도록 140으로 설정
+    # (막대자석에 가려지지 않으면서 코일 위에 나타남)
+    force_y_pos = 140 
 
     # Upward force arrow (Hidden by default, ID for JS targeting)
-    # z-index: 10으로 설정하여 자석보다 앞에 나타나도록 함
+    # z-index: 10으로 설정하여 자석과 코일보다 앞에 나타나도록 함
     force_up_arrow_svg = f"""
     <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
