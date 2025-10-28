@@ -8,10 +8,6 @@ st.title("🧲 전자기 유도 학습 앱")
 st.markdown("### 자석이 코일 중심 위에서 반복적으로 움직이는 모습을 관찰하세요!")
 
 # 시나리오 정의
-# 1: N극이 가까워짐 (down, N)
-# 2: S극이 가까워짐 (down, S)
-# 3: N극이 멀어짐 (up, N)
-# 4: S극이 멀어지는 경우 (up, S)
 scenarios = {
     1: {"desc": "N극이 가까워지는 경우", "motion": "down", "pole": "N"},
     2: {"desc": "S극이 가까워지는 경우", "motion": "down", "pole": "S"},
@@ -23,11 +19,9 @@ scenarios = {
 if "step" not in st.session_state:
     st.session_state.step = 0
 if "scenario" not in st.session_state:
-    # 딕셔너리의 키 중에서 랜덤으로 시나리오 선택
     st.session_state.scenario = random.choice(list(scenarios.keys()))
 if "quiz1_result" not in st.session_state:
     st.session_state.quiz1_result = None
-# 퀴즈 1 화살표 고정 상태 추가
 if "force_arrow_fixed" not in st.session_state:
     st.session_state.force_arrow_fixed = None
 
@@ -37,20 +31,17 @@ scenario = scenarios[st.session_state.scenario]
 def get_scene_html(motion, pole, animate=True):
     """
     자석의 움직임과 극성을 시각화하는 HTML/CSS 코드를 생성하여 반환합니다.
-    (화살표 위치 Y=215px 유지)
+    중심축을 정렬하여 자석과 코일이 일직선상에 위치하도록 수정.
     """
     pole_color = "red" if pole == "N" else "blue"
-    
-    # 자석이 가까워지는 경우 (down)는 아래로 80px 이동, 멀어지는 경우 (up)는 위로 -80px 이동
     move_dir = "80px" if motion == "down" else "-80px"
     
-    # 화살표 SVG 정의 (자석의 움직임)
-    arrow_color = "#4CAF50" # 초록색 화살표
+    # 화살표 SVG 정의
+    arrow_color = "#4CAF50"
     arrow_size = 40
-    arrow_offset_x = 70 # 자석 오른쪽으로 offset
+    arrow_offset_x = 70
     
     if motion == "down":
-        # 아래를 향하는 화살표 (top에서 시작해서 아래로)
         arrow_svg = f"""
         <svg width="{arrow_size}" height="{arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{arrow_color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
              style="position:absolute; right:-{arrow_offset_x}px; top:calc(50% - {arrow_size/2}px);">
@@ -58,8 +49,7 @@ def get_scene_html(motion, pole, animate=True):
             <polyline points="5 12 12 19 19 12"></polyline>
         </svg>
         """
-    else: # motion == "up"
-        # 위를 향하는 화살표 (bottom에서 시작해서 위로)
+    else:
         arrow_svg = f"""
         <svg width="{arrow_size}" height="{arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{arrow_color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
              style="position:absolute; right:-{arrow_offset_x}px; top:calc(50% - {arrow_size/2}px);">
@@ -68,8 +58,6 @@ def get_scene_html(motion, pole, animate=True):
         </svg>
         """
 
-
-    # 애니메이션 정의 (3초 동안 진행하며, 50% 지점에서 최대 이동)
     anim = f"""
     @keyframes floatMove {{
         0%   {{ transform: translateY(0); }}
@@ -79,7 +67,7 @@ def get_scene_html(motion, pole, animate=True):
     }}
     """
     
-    # 코일 및 전선 경로 정의 (생략 - 위치 조정과 무관)
+    # 코일 설정
     coil_height = 180
     coil_top_y_svg = 130 
     coil_bottom_y = coil_top_y_svg + coil_height 
@@ -111,20 +99,21 @@ def get_scene_html(motion, pole, animate=True):
         <path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
         <path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
-    # =================================================================
 
-    # --- 유도력 화살표 위치: Y=215px ---
+    # 유도력 화살표 위치
     force_arrow_size = 50 
     force_arrow_stroke_width = 3 
-    force_arrow_color = "#E94C3D" 
-    force_x_pos = 105 # X 위치: 코일 중심 (130)에 화살표 중심 (25)이 오도록 (130 - 25 = 105)
-    force_y_pos = 215 # Y 위치: 215px
+    force_arrow_color = "#E94C3D"
+    
+    # 코일 중심(130px)에 맞춰 화살표 위치 계산
+    # 전체 컨테이너 너비 300px, 중심 150px
+    # 코일 중심 130px이므로, 절대 위치로 150px - (화살표 크기/2) = 125px
+    force_x_pos = 125  # 중심 정렬
+    force_y_pos = 215
 
-    # 퀴즈 1 결과에 따라 화살표의 초기 투명도 설정
     up_opacity = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Up' else 0
     down_opacity = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Down' else 0
 
-    # Upward force arrow
     force_up_arrow_svg = f"""
     <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
           style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{up_opacity}; pointer-events: none; transition: opacity 0.1s;">
@@ -132,7 +121,7 @@ def get_scene_html(motion, pole, animate=True):
         <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
     """
-    # Downward force arrow
+
     force_down_arrow_svg = f"""
     <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
           style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{down_opacity}; pointer-events: none; transition: opacity 0.1s;">
@@ -141,21 +130,22 @@ def get_scene_html(motion, pole, animate=True):
     </svg>
     """
     
-    # 자석의 색깔, 극성, 애니메이션을 포함한 HTML 구조
+    # 자석 위치: 전체 컨테이너 중심(150px)에 자석 너비의 절반(40px)을 빼서 중앙 정렬
+    magnet_left_position = 110  # 150 - 40 = 110px
+    
     html = f"""
-    <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative;">
+    <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative; width: 300px; margin-left: auto; margin-right: auto;">
         
       {force_up_arrow_svg}
       {force_down_arrow_svg}
         
-      <div style="display:flex; align-items:center; justify-content:center; position:relative; top:0;">
+      <div style="position:relative; width:300px; height:160px; display:flex; justify-content:center;">
         <div style="
             width:80px; height:160px;
             background:#ccc; border:4px solid #222; border-radius:10px;
             display:flex; align-items:flex-end; justify-content:center;
-            position:relative;
-            transform: translateX(-75px); /* 막대자석을 코일 중심축에서 왼쪽으로 추가 이동 (75px) */
-            /* 애니메이션 적용: 움직임 요청 시 3초 ease-in-out 무한 반복 */
+            position:absolute;
+            left: {magnet_left_position}px;
             animation:{'floatMove 3s ease-in-out infinite' if animate else 'none'};">
             
             <div style="
@@ -165,7 +155,8 @@ def get_scene_html(motion, pole, animate=True):
                 text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
                 {pole}
             </div>
-            {arrow_svg if animate else ''} </div>
+            {arrow_svg if animate else ''}
+        </div>
       </div>
 
       <svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
@@ -180,7 +171,6 @@ def get_scene_html(motion, pole, animate=True):
 
     <style>
     {anim}
-    /* Streamlit 기본 폰트 적용 */
     div {{
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     }}
@@ -195,242 +185,167 @@ if st.session_state.step == 0:
     st.info("랜덤으로 선택된 상황을 관찰하고, 렌츠의 법칙에 따라 코일에 유도되는 현상을 예측해 보세요.")
     st.write(f"**현재 상황:** **{scenario['desc']}**")
     
-    # 0단계는 기존 방식대로 HTML 렌더링
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
     
     if st.button("퀴즈 시작하기 ➡️"):
         st.session_state.step = 1
-        st.session_state.quiz1_result = None # Reset result
-        st.session_state.force_arrow_fixed = None # Reset fixed arrow
-        st.query_params.clear() # Clear any residual query params
+        st.session_state.quiz1_result = None
+        st.session_state.force_arrow_fixed = None
+        st.query_params.clear()
         st.rerun()
 
 elif st.session_state.step == 1:
-    
-    # 정답 맞힐 시 즉시 Step 2로 전환 (이전 수정사항)
-    if st.session_state.quiz1_result == "Correct":
-        st.session_state.step = 2
-        st.rerun()
-        
     st.subheader("퀴즈 ①: 코일이 자석에 가하는 자기력 방향")
-    
-    # 렌츠의 법칙: 변화를 방해하는 방향으로 자기력 작용
-    correct_dir = "Up" if scenario["motion"] == "down" else "Down"
-    correct_text = "위쪽(밀어냄)" if correct_dir == "Up" else "아래쪽(끌어당김)"
     
     st.warning("💡 렌츠의 법칙: 자속 변화를 '방해'하는 방향으로 유도 자기장이 형성됩니다.")
     st.markdown("**코일이 자석에 가하는 힘의 방향을 선택하세요 (마우스 커서를 올려 미리보기가 가능합니다):**")
     
     unique_key = str(uuid.uuid4())
     
-    # HTML Component for combined visualization, buttons, and hover logic
     quiz1_full_html = f"""
-    <form method="get" action="" id="quiz-form-{unique_key}">
-        <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
-            
-            <input type="hidden" name="choice" id="choice-input-{unique_key}" value="" />
-            <input type="hidden" name="fixed_arrow" id="fixed-arrow-input-{unique_key}" value="" />
-            
-            <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
-                <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
-                    <button 
-                        type="button" 
-                        class="quiz-button" 
-                        data-choice="Up"
-                    >
-                        ⬆️ 위쪽 힘
-                    </button>
-                </div>
-                <div id="down-choice" class="quiz-choice-wrapper" style="width: 45%;">
-                    <button 
-                        type="button" 
-                        class="quiz-button" 
-                        data-choice="Down"
-                    >
-                        ⬇️ 아래쪽 힘
-                    </button>
-                </div>
+    <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
+        
+        <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
+            <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
+                <button type="button" class="quiz-button" data-choice="Up">
+                    ⬆️ 위쪽 힘
+                </button>
             </div>
-            
-            <div id="visualization-area">
-                {get_scene_html(scenario["motion"], scenario["pole"], animate=True)}
+            <div id="down-choice" class="quiz-choice-wrapper" style="width: 45%;">
+                <button type="button" class="quiz-button" data-choice="Down">
+                    ⬇️ 아래쪽 힘
+                </button>
             </div>
         </div>
         
-        <style>
-            /* 버튼 스타일 */
-            .quiz-button {{
-                background-color: #f0f2f6;
-                color: #262730;
-                border: 1px solid #ccc;
-                border-radius: 0.5rem;
-                padding: 0.5rem 1rem;
-                width: 100%;
-                cursor: pointer;
-                font-size: 1rem;
-                font-weight: 600;
-                transition: background-color 0.2s, box-shadow 0.2s;
+        <div id="visualization-area">
+            {get_scene_html(scenario["motion"], scenario["pole"], animate=True)}
+        </div>
+    </div>
+    
+    <style>
+        .quiz-button {{
+            background-color: #f0f2f6;
+            color: #262730;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            width: 100%;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }}
+        .quiz-button:hover {{
+            background-color: #e0e0e0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }}
+        .quiz-button.is-active {{
+            box-shadow: 0 0 0 3px #1f77b4;
+            background-color: #dbeafe;
+        }}
+        #up-choice button {{
+            border: 2px solid #3b82f6;
+        }}
+        #down-choice button {{
+            border: 2px solid #ef4444;
+        }}
+    </style>
+    
+    <script>
+        const upButton = document.querySelector('#up-choice button');
+        const downButton = document.querySelector('#down-choice button');
+        const forceUp = document.getElementById('force-up');
+        const forceDown = document.getElementById('force-down');
+        
+        // 마우스 오버: 화살표 미리보기 (선택되지 않은 경우에만)
+        const handleMouseOver = (forceElement) => {{
+            if (!document.querySelector('.quiz-button.is-active')) {{
+                forceElement.style.opacity = '1';
             }}
-            .quiz-button:hover:not(.is-active) {{ /* 고정된 버튼에는 호버 효과 적용하지 않음 */
-                background-color: #e0e0e0;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }};
+        
+        // 마우스 아웃: 화살표 숨기기 (선택되지 않은 경우에만)
+        const handleMouseOut = (forceElement) => {{
+            if (!document.querySelector('.quiz-button.is-active')) {{
+                forceElement.style.opacity = '0';
             }}
-            .quiz-button.is-active {{
-                box-shadow: 0 0 0 3px #1f77b4; /* 고정된 버튼 시각화 */
-                background-color: #dbeafe; /* 배경색 변경 */
-            }}
-            #up-choice button {{
-                border: 2px solid #3b82f6; /* Up color hint */
-            }}
-            #down-choice button {{
-                border: 2px solid #ef4444; /* Down color hint */
-            }}
-            .quiz-choice-wrapper {{
-                margin-bottom: 20px;
-            }}
-        </style>
-        <script>
-            // JS to handle hover events and control the force arrows opacity
-            const upButton = document.querySelector('#up-choice button');
-            const downButton = document.querySelector('#down-choice button');
-            const forceUp = document.getElementById('force-up');
-            const forceDown = document.getElementById('force-down');
-            const choiceInput = document.getElementById('choice-input-{unique_key}');
-            const fixedArrowInput = document.getElementById('fixed-arrow-input-{unique_key}'); 
-            const quizForm = document.getElementById('quiz-form-{unique_key}');
+        }};
+        
+        // 클릭: 화살표 고정 및 버튼 활성화
+        const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
+            // 화살표 표시 고정
+            forceElement.style.opacity = '1';
+            otherForceElement.style.opacity = '0';
             
-            // --- 마우스 오버/아웃 로직 ---
-            const handleMouseOver = (forceElement) => {{
-                // 고정된 화살표가 없는 경우에만 오버 효과 적용
-                if (!document.querySelector('.quiz-button.is-active')) {{
-                    forceElement.style.opacity = '1';
-                }}
-            }};
+            // 버튼 활성화 상태 표시
+            document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
+            buttonElement.classList.add('is-active');
             
-            const handleMouseOut = (forceElement) => {{
-                // 고정된 화살표가 없는 경우에만 아웃 효과 적용
-                if (!document.querySelector('.quiz-button.is-active')) {{
-                    forceElement.style.opacity = '0';
-                }}
-            }};
-            
-            // --- 클릭 로직 (수정된 부분) ---
-            const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
-                // 1. 화살표 고정 및 UI 업데이트
-                forceElement.style.opacity = '1'; // 선택된 화살표 표시
-                otherForceElement.style.opacity = '0'; // 다른 화살표 숨김
-                
-                // 모든 버튼에서 is-active 제거 후 현재 버튼에만 추가 (UI)
-                document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
-                buttonElement.classList.add('is-active'); // 버튼 고정 상태 표시
-                
-                // 2. Streamlit에 전달할 값 설정
-                choiceInput.value = choice; 
-                fixedArrowInput.value = choice; // 고정된 화살표 정보도 함께 전달
-                
-                // 3. 폼 제출 (Streamlit 상태 업데이트)
-                quizForm.submit();
-            }};
-            
-            // --- 이벤트 리스너 설정 ---
-            if (upButton && forceUp) {{
-                upButton.addEventListener('mouseover', () => handleMouseOver(forceUp));
-                upButton.addEventListener('mouseout', () => handleMouseOut(forceUp));
-                upButton.addEventListener('click', () => {{ 
-                    handleClick('Up', forceUp, forceDown, upButton);
-                }});
-            }}
-            
-            if (downButton && forceDown) {{
-                downButton.addEventListener('mouseover', () => handleMouseOver(forceDown));
-                downButton.addEventListener('mouseout', () => handleMouseOut(forceDown));
-                downButton.addEventListener('click', () => {{ 
-                    handleClick('Down', forceDown, forceUp, downButton);
-                }});
-            }}
-            
-            // --- Streamlit 상태 기반으로 초기 화살표 및 버튼 고정 ---
-            const fixedState = "{st.session_state.force_arrow_fixed}";
-            if (fixedState === 'Up') {{
-                forceUp.style.opacity = '1';
-                upButton.classList.add('is-active');
-            }} else if (fixedState === 'Down') {{
-                forceDown.style.opacity = '1';
-                downButton.classList.add('is-active');
-            }}
-            
-        </script>
-    </form>
+            // Streamlit 상태에 저장
+            window.parent.postMessage({{
+                type: 'streamlit:setComponentValue',
+                value: choice
+            }}, '*');
+        }};
+        
+        // 이벤트 리스너 설정
+        if (upButton && forceUp) {{
+            upButton.addEventListener('mouseover', () => handleMouseOver(forceUp));
+            upButton.addEventListener('mouseout', () => handleMouseOut(forceUp));
+            upButton.addEventListener('click', () => {{ 
+                handleClick('Up', forceUp, forceDown, upButton);
+            }});
+        }}
+        
+        if (downButton && forceDown) {{
+            downButton.addEventListener('mouseover', () => handleMouseOver(forceDown));
+            downButton.addEventListener('mouseout', () => handleMouseOut(forceDown));
+            downButton.addEventListener('click', () => {{ 
+                handleClick('Down', forceDown, forceUp, downButton);
+            }});
+        }}
+        
+        // 초기 상태 복원 (이전에 선택한 것이 있으면)
+        const fixedState = "{st.session_state.force_arrow_fixed}";
+        if (fixedState === 'Up') {{
+            forceUp.style.opacity = '1';
+            forceDown.style.opacity = '0';
+            upButton.classList.add('is-active');
+        }} else if (fixedState === 'Down') {{
+            forceDown.style.opacity = '1';
+            forceUp.style.opacity = '0';
+            downButton.classList.add('is-active');
+        }}
+    </script>
     """
     
-    st.components.v1.html(quiz1_full_html, height=520 + 100) # Give extra height for buttons/padding
+    # HTML 컴포넌트로부터 선택값 받기
+    selected_choice = st.components.v1.html(quiz1_full_html, height=620)
     
-    # Check for the submitted choice in query parameters
-    query_params = st.query_params
-    
-    chosen_dir = query_params.get("choice")
-    fixed_arrow = query_params.get("fixed_arrow") # 고정된 화살표 정보 획득
-    
-    # Step 1: 고정된 화살표 상태 업데이트 (UI 고정을 Streamlit 상태로 반영)
-    if fixed_arrow and st.session_state.force_arrow_fixed != fixed_arrow:
-        st.session_state.force_arrow_fixed = fixed_arrow
-        # 고정 정보는 반영했으므로 쿼리 파라미터에서 제거
-        if "fixed_arrow" in st.query_params:
-            del st.query_params["fixed_arrow"]
-        # Streamlit이 다시 실행되어 새로운 force_arrow_fixed 값을 반영한 HTML을 렌더링해야 함
-        # 이 시점에서 chosen_dir도 함께 들어와 퀴즈 처리도 같이 진행될 수 있음.
-        # if not chosen_dir: # chosen_dir이 없는 상태라면 (고정만 변경한 경우) 재실행
+    # 선택값이 있으면 세션에 저장
+    if selected_choice and selected_choice != st.session_state.force_arrow_fixed:
+        st.session_state.force_arrow_fixed = selected_choice
         st.rerun()
-
-    # Step 2: 퀴즈 정답 처리
-    # chosen_dir이 있으면서, 아직 퀴즈 결과가 없는 경우에만 실행
-    if chosen_dir and st.session_state.quiz1_result is None:
-        if chosen_dir == correct_dir:
-            st.session_state.quiz1_result = "Correct"
-            st.session_state.step = 2 # Setting the next step
-            st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다. 다음 퀴즈로 넘어갑니다. (잠시 후 화면이 전환됩니다.)")
-            
-            # Crucial: Clear the query parameter and trigger rerun to apply state changes
-            if "choice" in st.query_params:
-                del st.query_params["choice"]
-            st.rerun() # Immediately rerun to transition to step 2
-            
-        else:
-            st.session_state.quiz1_result = "Incorrect"
-            st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
-            
-            # Clear the query parameter so the error doesn't persist on subsequent runs
-            if "choice" in st.query_params:
-                del st.query_params["choice"]
-            st.rerun() # Rerun to display the error and re-render the quiz without the query param
-
-    # If the user answered incorrectly on a previous run, display the error message again
-    if st.session_state.quiz1_result == "Incorrect":
-        st.error(f"❌ 오답이에요. 자석의 움직임을 **방해**하는 방향으로 힘이 작용해야 해요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
-
-    # --- 다음 단계로 넘어가는 버튼 (정답 여부와 무관하게 이동) ---
+    
+    # 다음 단계로 넘어가기 버튼
     st.markdown("---")
     if st.button("다음으로 넘어가기 ⏭️"):
         st.session_state.step = 2
         st.rerun()
-    # ----------------------------------------------------------------------
-
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
     
-    # 퀴즈 1 상태 초기화 (단계 이동 시 고정 상태 해제)
     st.session_state.force_arrow_fixed = None
     
-    # 유도되는 극성 계산 (퀴즈 1의 결과와 일치)
-    if scenario["motion"] == "down": # 가까워지면 밀어내야 하므로 같은 극
+    if scenario["motion"] == "down":
         top_pole = scenario["pole"]
         explanation = f"자석의 {scenario['pole']}극이 가까워지므로, 코일 윗면은 **밀어내기 위해** 같은 극인 {top_pole}극이 됩니다."
-    else: # 멀어지면 끌어당겨야 하므로 반대 극
+    else:
         top_pole = "S" if scenario["pole"] == "N" else "N"
         explanation = f"자석의 {scenario['pole']}극이 멀어지므로, 코일 윗면은 **끌어당기기 위해** 반대 극인 {top_pole}극이 됩니다."
 
-    # 시각화 HTML 렌더링
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
 
     options = ["윗면이 N극", "윗면이 S극"]
@@ -448,13 +363,11 @@ elif st.session_state.step == 2:
 elif st.session_state.step == 3:
     st.subheader("퀴즈 ③: 코일에 유도되는 전류 방향")
     
-    # 앙페르/오른손 법칙으로 전류 방향 계산
     if (scenario["motion"] == "down" and scenario["pole"] == "N") or (scenario["motion"] == "up" and scenario["pole"] == "S"):
-        current = "반시계방향" # 윗면이 N극인 경우
+        current = "반시계방향"
     else:
-        current = "시계방향" # 윗면이 S극인 경우
+        current = "시계방향"
         
-    # 시각화 HTML 렌더링
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
         
     st.warning("💡 오른손 법칙: 유도된 자극(퀴즈 ② 결과)을 오른손 엄지손가락으로 가리키고 코일을 감싸쥐면, 네 손가락 방향이 전류의 방향입니다.")
@@ -474,17 +387,15 @@ elif st.session_state.step == 4:
     st.success("축하합니다! 전자기 유도 현상(렌츠의 법칙)의 세 단계를 모두 정확히 이해하고 적용했습니다.")
     st.markdown(f"**풀이한 상황:** {scenario['desc']}")
     
-    # 시각화 HTML 렌더링
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
     
     if st.button("새로운 상황으로 다시 시작"):
         st.session_state.step = 0
-        # 이전에 풀었던 시나리오가 아닌 것을 선택 (최소한 2개 이상일 때)
         available_scenarios = [k for k in scenarios.keys() if k != st.session_state.scenario]
         if available_scenarios:
             st.session_state.scenario = random.choice(available_scenarios)
         else:
             st.session_state.scenario = random.choice(list(scenarios.keys()))
-        st.session_state.quiz1_result = None # Reset result
-        st.session_state.force_arrow_fixed = None # Reset fixed arrow
+        st.session_state.quiz1_result = None
+        st.session_state.force_arrow_fixed = None
         st.rerun()
