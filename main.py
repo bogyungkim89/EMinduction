@@ -204,8 +204,6 @@ if st.session_state.step == 0:
 
 elif st.session_state.step == 1:
     
-    # 퀴즈 1 정답을 맞추면 바로 step 2로 넘어가는 로직은 아래에서 처리합니다.
-    
     st.subheader("퀴즈 ①: 코일이 자석에 가하는 자기력 방향")
     
     correct_dir = "Up" if scenario["motion"] == "down" else "Down"
@@ -216,15 +214,13 @@ elif st.session_state.step == 1:
     
     unique_key = str(uuid.uuid4())
     
-    # HTML 폼을 사용하여 버튼 클릭 시 선택 정보를 쿼리 파라미터로 보냅니다.
     quiz1_full_html = f"""
     <form method="get" action="" id="quiz-form-{unique_key}">
         <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
             
             <input type="hidden" name="choice" id="choice-input-{unique_key}" value="" />
             <input type="hidden" name="fixed_arrow" id="fixed-arrow-input-{unique_key}" value="" />
-            
-            <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
+            <input type="hidden" name="next_step" value="2" /> <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
                 <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
                     <button type="button" class="quiz-button" data-choice="Up">
                         ⬆️ 위쪽 힘
@@ -271,7 +267,7 @@ elif st.session_state.step == 1:
             }}
             /* New CSS rule to force visibility of fixed arrow */
             .force-arrow-preview.fixed-arrow-visible {{
-                opacity: 1 !important; /* Override any other opacity settings */
+                opacity: 1 !important; 
             }}
         </style>
         
@@ -307,7 +303,7 @@ elif st.session_state.step == 1:
 
                 // Add fixed-arrow-visible to the clicked one
                 forceElement.classList.add('fixed-arrow-visible');
-                forceElement.style.opacity = '1'; // Ensure it's visible immediately
+                forceElement.style.opacity = '1'; 
 
                 document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
                 buttonElement.classList.add('is-active');
@@ -315,7 +311,7 @@ elif st.session_state.step == 1:
                 choiceInput.value = choice; 
                 fixedArrowInput.value = choice;
                 
-                quizForm.submit();
+                quizForm.submit(); // 폼을 제출하여 파이썬 코드를 재실행
             }};
             
             if (upButton && forceUp) {{
@@ -360,7 +356,8 @@ elif st.session_state.step == 1:
     query_params = st.query_params
     chosen_dir = query_params.get("choice")
     fixed_arrow = query_params.get("fixed_arrow")
-    
+    next_step = query_params.get("next_step") # '2'가 넘어오게 됨
+
     # 1. 화살표 고정 상태 업데이트 (재실행)
     if fixed_arrow and st.session_state.force_arrow_fixed != fixed_arrow:
         st.session_state.force_arrow_fixed = fixed_arrow
@@ -368,30 +365,20 @@ elif st.session_state.step == 1:
             del st.query_params["fixed_arrow"]
         st.rerun()
 
-    # 2. 정답/오답 확인 및 단계 이동
-    if chosen_dir and st.session_state.quiz1_result is None:
-        if chosen_dir == correct_dir:
-            st.session_state.quiz1_result = "Correct"
-            st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다.")
+    # 2. 버튼 클릭 시 (choice가 있을 때) 무조건 step 2로 이동
+    if chosen_dir:
+        # 퀴즈 1의 정답 여부와 관계없이 다음 단계로 전환
+        st.session_state.step = 2
+        
+        # 쿼리 파라미터 정리
+        if "choice" in st.query_params:
+            del st.query_params["choice"]
+        if "next_step" in st.query_params:
+            del st.query_params["next_step"]
             
-            st.session_state.step = 2 # 정답 시 바로 다음 단계로 이동
-            
-            if "choice" in st.query_params:
-                del st.query_params["choice"]
-            st.rerun()
-            
-        else:
-            st.session_state.quiz1_result = "Incorrect"
-            st.error(f"❌ 오답이에요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
-            
-            if "choice" in st.query_params:
-                del st.query_params["choice"]
-            st.rerun()
-
-    if st.session_state.quiz1_result == "Incorrect":
-        st.error(f"❌ 오답이에요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
-
-    # st.markdown("---") # '다음으로 넘어가기' 버튼과 함께 삭제
+        st.rerun()
+    
+    # 퀴즈 1 정답/오답 메시지 및 '다음으로 넘어가기' 버튼 로직은 제거됨
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
