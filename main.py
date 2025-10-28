@@ -26,12 +26,14 @@ scenario = scenarios[st.session_state.scenario]
 def draw_scene(motion, pole, animate=True):
     pole_color = "red" if pole == "N" else "blue"
     move_dir = "80px" if motion == "down" else "-80px"
+    arrow_symbol = "⬇️" if motion == "down" else "⬆️"
 
+    # --- 애니메이션 키프레임: 절반 시간으로 (1.5s) + 복귀시간 3배 유지 ---
     anim = f"""
     @keyframes floatMove {{
         0%   {{ transform: translateY(0); }}
         50%  {{ transform: translateY({move_dir}); }}
-        80%  {{ transform: translateY(0); }}  /* 복귀 시간 3배로 느리게 */
+        80%  {{ transform: translateY(0); }}
         100% {{ transform: translateY(0); }}
     }}
     """
@@ -39,16 +41,24 @@ def draw_scene(motion, pole, animate=True):
     html = f"""
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px;">
       
-      <!-- 자석 -->
+      <!-- 자석 + 화살표 -->
       <div style="display:flex; align-items:center; justify-content:center; position:relative; top:0;">
+        
+        <!-- 자석 본체 -->
         <div style="
             width:80px; height:160px;
-            background:#ccc; border:4px solid #222;
+            background:#ddd; border:4px solid #222;
             display:flex; align-items:flex-end; justify-content:center;
             position:relative;
-            animation:{'floatMove 3s ease-in-out infinite' if animate else 'none'};">
-            <div style="font-size:56px; font-weight:bold; color:{pole_color}; margin-bottom:2px;">{pole}</div>
+            animation:{'floatMove 1.5s ease-in-out infinite' if animate else 'none'};">
+            <div style="font-size:56px; font-weight:bold; color:{pole_color}; margin-bottom:6px;">{pole}</div>
         </div>
+
+        <!-- 방향 화살표 -->
+        <div style="font-size:48px; margin-left:30px; color:#444;">
+            {arrow_symbol}
+        </div>
+
       </div>
 
       <!-- 코일 -->
