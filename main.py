@@ -195,7 +195,15 @@ if st.session_state.step == 0:
         st.rerun()
 
 elif st.session_state.step == 1:
+    
+    if st.session_state.quiz1_result == "Correct":
+        st.session_state.step = 2
+        st.rerun()
+        
     st.subheader("퀴즈 ①: 코일이 자석에 가하는 자기력 방향")
+    
+    correct_dir = "Up" if scenario["motion"] == "down" else "Down"
+    correct_text = "위쪽(밀어냄)" if correct_dir == "Up" else "아래쪽(끌어당김)"
     
     st.warning("💡 렌츠의 법칙: 자속 변화를 '방해'하는 방향으로 유도 자기장이 형성됩니다.")
     st.markdown("**코일이 자석에 가하는 힘의 방향을 선택하세요 (마우스 커서를 올려 미리보기가 가능합니다):**")
@@ -203,132 +211,155 @@ elif st.session_state.step == 1:
     unique_key = str(uuid.uuid4())
     
     quiz1_full_html = f"""
-    <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
-        
-        <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
-            <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
-                <button type="button" class="quiz-button" data-choice="Up">
-                    ⬆️ 위쪽 힘
-                </button>
+    <form method="get" action="" id="quiz-form-{unique_key}">
+        <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
+            
+            <input type="hidden" name="choice" id="choice-input-{unique_key}" value="" />
+            <input type="hidden" name="fixed_arrow" id="fixed-arrow-input-{unique_key}" value="" />
+            
+            <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
+                <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
+                    <button type="button" class="quiz-button" data-choice="Up">
+                        ⬆️ 위쪽 힘
+                    </button>
+                </div>
+                <div id="down-choice" class="quiz-choice-wrapper" style="width: 45%;">
+                    <button type="button" class="quiz-button" data-choice="Down">
+                        ⬇️ 아래쪽 힘
+                    </button>
+                </div>
             </div>
-            <div id="down-choice" class="quiz-choice-wrapper" style="width: 45%;">
-                <button type="button" class="quiz-button" data-choice="Down">
-                    ⬇️ 아래쪽 힘
-                </button>
+            
+            <div id="visualization-area">
+                {get_scene_html(scenario["motion"], scenario["pole"], animate=True)}
             </div>
         </div>
         
-        <div id="visualization-area">
-            {get_scene_html(scenario["motion"], scenario["pole"], animate=True)}
-        </div>
-    </div>
-    
-    <style>
-        .quiz-button {{
-            background-color: #f0f2f6;
-            color: #262730;
-            border: 1px solid #ccc;
-            border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            width: 100%;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: background-color 0.2s, box-shadow 0.2s;
-        }}
-        .quiz-button:hover {{
-            background-color: #e0e0e0;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }}
-        .quiz-button.is-active {{
-            box-shadow: 0 0 0 3px #1f77b4;
-            background-color: #dbeafe;
-        }}
-        #up-choice button {{
-            border: 2px solid #3b82f6;
-        }}
-        #down-choice button {{
-            border: 2px solid #ef4444;
-        }}
-    </style>
-    
-    <script>
-        const upButton = document.querySelector('#up-choice button');
-        const downButton = document.querySelector('#down-choice button');
-        const forceUp = document.getElementById('force-up');
-        const forceDown = document.getElementById('force-down');
+        <style>
+            .quiz-button {{
+                background-color: #f0f2f6;
+                color: #262730;
+                border: 1px solid #ccc;
+                border-radius: 0.5rem;
+                padding: 0.5rem 1rem;
+                width: 100%;
+                cursor: pointer;
+                font-size: 1rem;
+                font-weight: 600;
+                transition: background-color 0.2s, box-shadow 0.2s;
+            }}
+            .quiz-button:hover:not(.is-active) {{
+                background-color: #e0e0e0;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            .quiz-button.is-active {{
+                box-shadow: 0 0 0 3px #1f77b4;
+                background-color: #dbeafe;
+            }}
+            #up-choice button {{
+                border: 2px solid #3b82f6;
+            }}
+            #down-choice button {{
+                border: 2px solid #ef4444;
+            }}
+        </style>
         
-        // 마우스 오버: 화살표 미리보기 (선택되지 않은 경우에만)
-        const handleMouseOver = (forceElement) => {{
-            if (!document.querySelector('.quiz-button.is-active')) {{
+        <script>
+            const upButton = document.querySelector('#up-choice button');
+            const downButton = document.querySelector('#down-choice button');
+            const forceUp = document.getElementById('force-up');
+            const forceDown = document.getElementById('force-down');
+            const choiceInput = document.getElementById('choice-input-{unique_key}');
+            const fixedArrowInput = document.getElementById('fixed-arrow-input-{unique_key}'); 
+            const quizForm = document.getElementById('quiz-form-{unique_key}');
+            
+            const handleMouseOver = (forceElement) => {{
+                if (!document.querySelector('.quiz-button.is-active')) {{
+                    forceElement.style.opacity = '1';
+                }}
+            }};
+            
+            const handleMouseOut = (forceElement) => {{
+                if (!document.querySelector('.quiz-button.is-active')) {{
+                    forceElement.style.opacity = '0';
+                }}
+            }};
+            
+            const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
                 forceElement.style.opacity = '1';
-            }}
-        }};
-        
-        // 마우스 아웃: 화살표 숨기기 (선택되지 않은 경우에만)
-        const handleMouseOut = (forceElement) => {{
-            if (!document.querySelector('.quiz-button.is-active')) {{
-                forceElement.style.opacity = '0';
-            }}
-        }};
-        
-        // 클릭: 화살표 고정 및 버튼 활성화
-        const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
-            // 화살표 표시 고정
-            forceElement.style.opacity = '1';
-            otherForceElement.style.opacity = '0';
+                otherForceElement.style.opacity = '0';
+                
+                document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
+                buttonElement.classList.add('is-active');
+                
+                choiceInput.value = choice; 
+                fixedArrowInput.value = choice;
+                
+                quizForm.submit();
+            }};
             
-            // 버튼 활성화 상태 표시
-            document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
-            buttonElement.classList.add('is-active');
+            if (upButton && forceUp) {{
+                upButton.addEventListener('mouseover', () => handleMouseOver(forceUp));
+                upButton.addEventListener('mouseout', () => handleMouseOut(forceUp));
+                upButton.addEventListener('click', () => {{ 
+                    handleClick('Up', forceUp, forceDown, upButton);
+                }});
+            }}
             
-            // Streamlit 상태에 저장
-            window.parent.postMessage({{
-                type: 'streamlit:setComponentValue',
-                value: choice
-            }}, '*');
-        }};
-        
-        // 이벤트 리스너 설정
-        if (upButton && forceUp) {{
-            upButton.addEventListener('mouseover', () => handleMouseOver(forceUp));
-            upButton.addEventListener('mouseout', () => handleMouseOut(forceUp));
-            upButton.addEventListener('click', () => {{ 
-                handleClick('Up', forceUp, forceDown, upButton);
-            }});
-        }}
-        
-        if (downButton && forceDown) {{
-            downButton.addEventListener('mouseover', () => handleMouseOver(forceDown));
-            downButton.addEventListener('mouseout', () => handleMouseOut(forceDown));
-            downButton.addEventListener('click', () => {{ 
-                handleClick('Down', forceDown, forceUp, downButton);
-            }});
-        }}
-        
-        // 초기 상태 복원 (이전에 선택한 것이 있으면)
-        const fixedState = "{st.session_state.force_arrow_fixed}";
-        if (fixedState === 'Up') {{
-            forceUp.style.opacity = '1';
-            forceDown.style.opacity = '0';
-            upButton.classList.add('is-active');
-        }} else if (fixedState === 'Down') {{
-            forceDown.style.opacity = '1';
-            forceUp.style.opacity = '0';
-            downButton.classList.add('is-active');
-        }}
-    </script>
+            if (downButton && forceDown) {{
+                downButton.addEventListener('mouseover', () => handleMouseOver(forceDown));
+                downButton.addEventListener('mouseout', () => handleMouseOut(forceDown));
+                downButton.addEventListener('click', () => {{ 
+                    handleClick('Down', forceDown, forceUp, downButton);
+                }});
+            }}
+            
+            const fixedState = "{st.session_state.force_arrow_fixed}";
+            if (fixedState === 'Up') {{
+                forceUp.style.opacity = '1';
+                upButton.classList.add('is-active');
+            }} else if (fixedState === 'Down') {{
+                forceDown.style.opacity = '1';
+                downButton.classList.add('is-active');
+            }}
+            
+        </script>
+    </form>
     """
     
-    # HTML 컴포넌트로부터 선택값 받기
-    selected_choice = st.components.v1.html(quiz1_full_html, height=620)
+    st.components.v1.html(quiz1_full_html, height=620)
     
-    # 선택값이 있으면 세션에 저장
-    if selected_choice and selected_choice != st.session_state.force_arrow_fixed:
-        st.session_state.force_arrow_fixed = selected_choice
+    query_params = st.query_params
+    chosen_dir = query_params.get("choice")
+    fixed_arrow = query_params.get("fixed_arrow")
+    
+    if fixed_arrow and st.session_state.force_arrow_fixed != fixed_arrow:
+        st.session_state.force_arrow_fixed = fixed_arrow
+        if "fixed_arrow" in st.query_params:
+            del st.query_params["fixed_arrow"]
         st.rerun()
-    
-    # 다음 단계로 넘어가기 버튼
+
+    if chosen_dir and st.session_state.quiz1_result is None:
+        if chosen_dir == correct_dir:
+            st.session_state.quiz1_result = "Correct"
+            st.session_state.step = 2
+            st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다.")
+            
+            if "choice" in st.query_params:
+                del st.query_params["choice"]
+            st.rerun()
+            
+        else:
+            st.session_state.quiz1_result = "Incorrect"
+            st.error(f"❌ 오답이에요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
+            
+            if "choice" in st.query_params:
+                del st.query_params["choice"]
+            st.rerun()
+
+    if st.session_state.quiz1_result == "Incorrect":
+        st.error(f"❌ 오답이에요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
+
     st.markdown("---")
     if st.button("다음으로 넘어가기 ⏭️"):
         st.session_state.step = 2
