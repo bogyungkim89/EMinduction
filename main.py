@@ -85,13 +85,13 @@ def draw_scene(motion, pole, animate=True):
     # 전선 감기 시작 Y 좌표 (위쪽 외부 전선 Y 좌표)
     wire_start_y = coil_top_y + 10  # 140
     
-    # 코일 내부 와인딩 종료 Y 좌표 (300. 전선 간격 유지를 위해 사용)
-    wire_end_y_winding = coil_bottom_y - 10 
+    # [수정된 부분] 코일 내부 와인딩 종료 Y 좌표 (원래 위치로 복원: 300)
+    wire_end_y = coil_bottom_y - 10 
     
     # 전선 감긴 횟수: 7턴
     num_turns = 7
     # 코일 내부 전선 간격 (Y_end - Y_start) / (턴 수 - 1)
-    step_y = (wire_end_y_winding - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
+    step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
     
     start_x = 210 # 코일 오른쪽 끝 (130 + 80 = 210)
     end_x = 50    # 코일 왼쪽 끝 (130 - 80 = 50)
@@ -99,12 +99,6 @@ def draw_scene(motion, pole, animate=True):
     # 외부 수평 전선 길이를 2.5배로 늘린 X 좌표 (210 + 75 = 285)
     exit_x_end = start_x + 75 
 
-    # [중요 수정] 아래쪽 외부 전선이 평행이동할 새로운 Y 좌표 계산
-    # 간격 (300 - 140 = 160)의 절반 (80px)만큼 위로 이동
-    winding_gap = wire_end_y_winding - wire_start_y # 160
-    move_up_distance = winding_gap / 2 # 80
-    external_wire_y = wire_end_y_winding - move_up_distance # 300 - 80 = 220 
-    
     # ---------------------------------------------------------------
     # 1. 오른쪽 전선 진입 (수평 직선) - Y 좌표 140
     external_wire_in = f"M {exit_x_end} {wire_start_y} L {start_x} {wire_start_y}"
@@ -119,7 +113,6 @@ def draw_scene(motion, pole, animate=True):
         current_y = wire_start_y + i * step_y 
         
         # Front Arc (Visible, Right to Left, Lower half, sweep-flag=1)
-        # 마지막 아크는 (210, 300) -> (50, 300)
         arc = f"A 80 22 0 0 1 {end_x} {current_y}"
         winding_front_segments.append(arc)
         
@@ -132,21 +125,19 @@ def draw_scene(motion, pole, animate=True):
     winding_path_d = " ".join(winding_front_segments)
 
     # ---------------------------------------------------------------
-    # 2. 코일 이탈 경로 (세그먼트 분리)
+    # 2. 코일 이탈 경로 (원래대로: 단일 수평선)
     # ---------------------------------------------------------------
+    exit_y_coil = wire_end_y # 300 (코일 와인딩 끝 Y 좌표)
     
-    exit_path_d = f"""
-        M {end_x} {wire_end_y_winding}                 <!-- 1. 마지막 아크 끝점 (50, 300)에서 시작 -->
-        L {start_x} {wire_end_y_winding}                <!-- 2. 코일 바닥 수평 연결 (210, 300) -->
-        L {start_x} {external_wire_y}                   <!-- 3. 수직 드롭/상승 (210, 220) -->
-        L {exit_x_end} {external_wire_y}                <!-- 4. 외부 수평 전선 (285, 220) -->
-    """
+    # 마지막 아크 끝점 (50, 300)에서 코일 내부를 거쳐 오른쪽 끝 (210, 300)으로 연결된 후,
+    # 외부 수평선으로 연결됩니다.
+    external_wire_out = f"M {start_x} {exit_y_coil} L {exit_x_end} {exit_y_coil}" 
     
     # 헬릭스 Path 및 외부 연결선 통합
     winding_svg = f"""
         <!-- 진입선 (수평 직선) --><path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
         <!-- 코일 감은 부분 (앞면만) --><path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
-        <!-- 코일 이탈 경로 (바닥 연결 + 수직 이동 + 외부 전선) --><path d="{exit_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <!-- 이탈선 (수평 직선 - 원래 위치로 복원) --><path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
     # =================================================================
     
@@ -252,12 +243,6 @@ elif st.session_state.step == 3:
     draw_scene(scenario["motion"], scenario["pole"], animate=False)
 
     # 앙페르/오른손 법칙으로 전류 방향 계산
-    # 윗면이 N극 -> 반시계방향 (N극을 엄지손가락으로 감싸면)
-    # 윗면이 S극 -> 시계방향 (S극을 엄지손가락으로 감싸면)
-    # **참고**: 현재 코일은 위에서 봤을 때 시계방향으로 감겨있으므로,
-    # 유도 전류 방향과 시각적 방향은 반대입니다.
-    # 윗면 N극 유도 시 -> 유도 자기장이 위로 향함 -> 엄지가 위로 (N극) -> 코일 감은 방향 기준 반시계
-    # 코일이 '시계방향'으로 감겨있다면, 유도 전류가 '반시계방향'일 때 시각적으로는 '올라가는' 방향의 전류가 생성됩니다. (오른손 법칙의 적용 결과는 그대로 유지)
     if (scenario["motion"] == "down" and scenario["pole"] == "N") or (scenario["motion"] == "up" and scenario["pole"] == "S"):
         current = "반시계방향" # 윗면이 N극인 경우
     else:
