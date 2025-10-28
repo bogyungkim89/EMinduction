@@ -31,7 +31,6 @@ scenario = scenarios[st.session_state.scenario]
 def get_scene_html(motion, pole, animate=True):
     """
     자석의 움직임과 극성을 시각화하는 HTML/CSS 코드를 생성하여 반환합니다.
-    중심축을 정렬하여 자석과 코일이 일직선상에 위치하도록 수정.
     """
     pole_color = "red" if pole == "N" else "blue"
     move_dir = "80px" if motion == "down" else "-80px"
@@ -205,10 +204,8 @@ if st.session_state.step == 0:
 
 elif st.session_state.step == 1:
     
-    if st.session_state.quiz1_result == "Correct":
-        st.session_state.step = 2
-        st.rerun()
-        
+    # 퀴즈 1 정답을 맞추면 바로 step 2로 넘어가는 로직은 아래에서 처리합니다.
+    
     st.subheader("퀴즈 ①: 코일이 자석에 가하는 자기력 방향")
     
     correct_dir = "Up" if scenario["motion"] == "down" else "Down"
@@ -219,6 +216,7 @@ elif st.session_state.step == 1:
     
     unique_key = str(uuid.uuid4())
     
+    # HTML 폼을 사용하여 버튼 클릭 시 선택 정보를 쿼리 파라미터로 보냅니다.
     quiz1_full_html = f"""
     <form method="get" action="" id="quiz-form-{unique_key}">
         <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
@@ -358,21 +356,25 @@ elif st.session_state.step == 1:
     
     st.components.v1.html(quiz1_full_html, height=620)
     
+    # --- Python 로직: 쿼리 파라미터를 읽어 상태 업데이트 및 다음 단계로 이동 ---
     query_params = st.query_params
     chosen_dir = query_params.get("choice")
     fixed_arrow = query_params.get("fixed_arrow")
     
+    # 1. 화살표 고정 상태 업데이트 (재실행)
     if fixed_arrow and st.session_state.force_arrow_fixed != fixed_arrow:
         st.session_state.force_arrow_fixed = fixed_arrow
         if "fixed_arrow" in st.query_params:
             del st.query_params["fixed_arrow"]
         st.rerun()
 
+    # 2. 정답/오답 확인 및 단계 이동
     if chosen_dir and st.session_state.quiz1_result is None:
         if chosen_dir == correct_dir:
             st.session_state.quiz1_result = "Correct"
-            st.session_state.step = 2
             st.success("✅ 정답입니다! 가까워지는 것을 막으려 밀어내고, 멀어지는 것을 막으려 끌어당기는 힘이 작용합니다.")
+            
+            st.session_state.step = 2 # 정답 시 바로 다음 단계로 이동
             
             if "choice" in st.query_params:
                 del st.query_params["choice"]
@@ -389,10 +391,7 @@ elif st.session_state.step == 1:
     if st.session_state.quiz1_result == "Incorrect":
         st.error(f"❌ 오답이에요. 정답은 **{correct_text}**입니다. 다시 시도해 보세요.")
 
-    st.markdown("---")
-    if st.button("다음으로 넘어가기 ⏭️"):
-        st.session_state.step = 2
-        st.rerun()
+    # st.markdown("---") # '다음으로 넘어가기' 버튼과 함께 삭제
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
