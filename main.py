@@ -205,11 +205,8 @@ if st.session_state.step == 0:
 elif st.session_state.step == 1:
     
     # 먼저 query_params 확인 및 처리
-    query_params = st.query_params
-    chosen_dir = query_params.get("choice")
-    
-    # 버튼 클릭 시 바로 step 2로 전환
-    if chosen_dir:
+    if "choice" in st.query_params:
+        chosen_dir = st.query_params["choice"]
         st.session_state.step = 2
         st.session_state.force_arrow_fixed = chosen_dir
         st.query_params.clear()
