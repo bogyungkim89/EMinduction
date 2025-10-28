@@ -271,9 +271,13 @@ elif st.session_state.step == 1:
                 font-weight: 600;
                 transition: background-color 0.2s, box-shadow 0.2s;
             }}
-            .quiz-button:hover {{
+            .quiz-button:hover:not(.is-active) {{ /* 고정된 버튼에는 호버 효과 적용하지 않음 */
                 background-color: #e0e0e0;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            .quiz-button.is-active {{
+                box-shadow: 0 0 0 3px #1f77b4; /* 고정된 버튼 시각화 */
+                background-color: #dbeafe; /* 배경색 변경 */
             }}
             #up-choice button {{
                 border: 2px solid #3b82f6; /* Up color hint */
@@ -292,7 +296,7 @@ elif st.session_state.step == 1:
             const forceUp = document.getElementById('force-up');
             const forceDown = document.getElementById('force-down');
             const choiceInput = document.getElementById('choice-input-{unique_key}');
-            const fixedArrowInput = document.getElementById('fixed-arrow-input-{unique_key}'); // 고정 화살표 인풋
+            const fixedArrowInput = document.getElementById('fixed-arrow-input-{unique_key}'); 
             const quizForm = document.getElementById('quiz-form-{unique_key}');
             
             // --- 마우스 오버/아웃 로직 ---
@@ -312,13 +316,13 @@ elif st.session_state.step == 1:
             
             // --- 클릭 로직 (수정된 부분) ---
             const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
-                // 1. 화살표 고정 및 비활성화
-                forceElement.style.opacity = '1';
-                otherForceElement.style.opacity = '0'; // 다른 화살표는 숨김
+                // 1. 화살표 고정 및 UI 업데이트
+                forceElement.style.opacity = '1'; // 선택된 화살표 표시
+                otherForceElement.style.opacity = '0'; // 다른 화살표 숨김
                 
                 // 모든 버튼에서 is-active 제거 후 현재 버튼에만 추가 (UI)
                 document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
-                buttonElement.classList.add('is-active');
+                buttonElement.classList.add('is-active'); // 버튼 고정 상태 표시
                 
                 // 2. Streamlit에 전달할 값 설정
                 choiceInput.value = choice; 
@@ -328,6 +332,7 @@ elif st.session_state.step == 1:
                 quizForm.submit();
             }};
             
+            // --- 이벤트 리스너 설정 ---
             if (upButton && forceUp) {{
                 upButton.addEventListener('mouseover', () => handleMouseOver(forceUp));
                 upButton.addEventListener('mouseout', () => handleMouseOut(forceUp));
@@ -344,12 +349,14 @@ elif st.session_state.step == 1:
                 }});
             }}
             
-            // --- Streamlit 상태 기반으로 초기 화살표 고정 ---
+            // --- Streamlit 상태 기반으로 초기 화살표 및 버튼 고정 ---
             const fixedState = "{st.session_state.force_arrow_fixed}";
             if (fixedState === 'Up') {{
                 forceUp.style.opacity = '1';
+                upButton.classList.add('is-active');
             }} else if (fixedState === 'Down') {{
                 forceDown.style.opacity = '1';
+                downButton.classList.add('is-active');
             }}
             
         </script>
@@ -365,16 +372,18 @@ elif st.session_state.step == 1:
     fixed_arrow = query_params.get("fixed_arrow") # 고정된 화살표 정보 획득
     
     # Step 1: 고정된 화살표 상태 업데이트 (UI 고정을 Streamlit 상태로 반영)
-    if fixed_arrow:
+    if fixed_arrow and st.session_state.force_arrow_fixed != fixed_arrow:
         st.session_state.force_arrow_fixed = fixed_arrow
         # 고정 정보는 반영했으므로 쿼리 파라미터에서 제거
         if "fixed_arrow" in st.query_params:
             del st.query_params["fixed_arrow"]
         # Streamlit이 다시 실행되어 새로운 force_arrow_fixed 값을 반영한 HTML을 렌더링해야 함
+        # 이 시점에서 chosen_dir도 함께 들어와 퀴즈 처리도 같이 진행될 수 있음.
+        # if not chosen_dir: # chosen_dir이 없는 상태라면 (고정만 변경한 경우) 재실행
         st.rerun()
 
-
     # Step 2: 퀴즈 정답 처리
+    # chosen_dir이 있으면서, 아직 퀴즈 결과가 없는 경우에만 실행
     if chosen_dir and st.session_state.quiz1_result is None:
         if chosen_dir == correct_dir:
             st.session_state.quiz1_result = "Correct"
@@ -410,7 +419,7 @@ elif st.session_state.step == 1:
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
     
-    # 퀴즈 1 상태 초기화
+    # 퀴즈 1 상태 초기화 (단계 이동 시 고정 상태 해제)
     st.session_state.force_arrow_fixed = None
     
     # 유도되는 극성 계산 (퀴즈 1의 결과와 일치)
