@@ -32,6 +32,7 @@ def get_scene_html(motion, pole, animate=True):
     """
     자석의 움직임과 극성을 시각화하는 HTML/CSS 코드를 생성하여 반환합니다.
     중심축을 정렬하여 자석과 코일이 일직선상에 위치하도록 수정.
+    코일 전체를 오른쪽으로 20px 이동.
     """
     pole_color = "red" if pole == "N" else "blue"
     move_dir = "80px" if motion == "down" else "-80px"
@@ -78,7 +79,7 @@ def get_scene_html(motion, pole, animate=True):
     step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
     start_x = 210 + coil_offset_x
     end_x = 50 + coil_offset_x
-    exit_x_end = start_x + 75 
+    exit_x_end = start_x + 75
 
     external_wire_in = f"M {exit_x_end} {wire_start_y} L {start_x} {wire_start_y}"
     winding_front_segments = []
