@@ -151,7 +151,7 @@ def draw_scene(motion, pole, animate=True):
             background:#ccc; border:4px solid #222; border-radius:10px;
             display:flex; align-items:flex-end; justify-content:center;
             position:relative;
-            transform: translateX(-40px); /* 막대자석을 코일 중심축에서 왼쪽으로 추가 이동 (40px) */
+            transform: translateX(-60px); /* 막대자석을 코일 중심축에서 왼쪽으로 추가 이동 (60px) */
             /* 애니메이션 적용: 움직임 요청 시 3초 ease-in-out 무한 반복 */
             animation:{'floatMove 3s ease-in-out infinite' if animate else 'none'};">
             
