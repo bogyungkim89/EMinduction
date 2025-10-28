@@ -39,8 +39,8 @@ def get_scene_html(motion, pole, animate=True):
     # 화살표 SVG 정의
     arrow_color = "#4CAF50"
     arrow_size = 40
-    # 수정: 화살표를 왼쪽으로 20px 이동 (right: -70px -> right: -90px)
-    arrow_offset_x = 90
+    # 복구: 원래 위치 (오른쪽으로 70px 떨어짐)
+    arrow_offset_x = 70
     
     if motion == "down":
         arrow_svg = f"""
@@ -132,8 +132,8 @@ def get_scene_html(motion, pole, animate=True):
     """
     
     # 자석 위치: 전체 컨테이너 중심(150px)에 자석 너비의 절반(40px)을 빼서 중앙 정렬
-    # 수정: 110px에서 왼쪽으로 20px 이동 -> 90px
-    magnet_left_position = 90  # 150 - 40 - 20 = 90px
+    # 복구: 원래 위치 (중심 정렬)
+    magnet_left_position = 110  # 150 - 40 = 110px
     
     html = f"""
     <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative; width: 300px; margin-left: auto; margin-right: auto;"><br>
