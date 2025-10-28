@@ -24,6 +24,10 @@ if "quiz1_result" not in st.session_state:
     st.session_state.quiz1_result = None
 if "force_arrow_fixed" not in st.session_state:
     st.session_state.force_arrow_fixed = None
+# 퀴즈 1단계 선택을 저장할 상태 추가
+if "quiz1_choice" not in st.session_state:
+    st.session_state.quiz1_choice = None
+
 
 scenario = scenarios[st.session_state.scenario]
 
@@ -31,11 +35,12 @@ scenario = scenarios[st.session_state.scenario]
 def get_scene_html(motion, pole, animate=True):
     """
     자석의 움직임과 극성을 시각화하는 HTML/CSS 코드를 생성하여 반환합니다.
+    (간결화를 위해 일부 상세 코드는 생략되었습니다. 기능은 유지됩니다.)
     """
     pole_color = "red" if pole == "N" else "blue"
     move_dir = "80px" if motion == "down" else "-80px"
     
-    # 화살표 SVG 정의
+    # --- 화살표 SVG 정의 (자석 운동 방향) ---
     arrow_color = "#4CAF50"
     arrow_size = 40
     arrow_offset_x = 70
@@ -66,7 +71,7 @@ def get_scene_html(motion, pole, animate=True):
     }}
     """
     
-    # 코일 설정
+    # --- 코일 설정 ---
     coil_height = 180
     coil_top_y_svg = 130 
     coil_bottom_y = coil_top_y_svg + coil_height 
@@ -99,7 +104,7 @@ def get_scene_html(motion, pole, animate=True):
         <path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
 
-    # 유도력 화살표 위치
+    # --- 유도력 화살표 (퀴즈 1 선택 결과) ---
     force_arrow_size = 50 
     force_arrow_stroke_width = 3 
     force_arrow_color = "#E94C3D"
@@ -107,31 +112,31 @@ def get_scene_html(motion, pole, animate=True):
     force_x_pos = 125 
     force_y_pos = 215
 
-    # Determine initial opacity based on st.session_state.force_arrow_fixed
-    up_opacity_initial = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Up' else 0
-    down_opacity_initial = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Down' else 0
+    # step 1에서 quiz1_choice, step 2 이후부터는 force_arrow_fixed를 사용
+    fixed_arrow = st.session_state.force_arrow_fixed if st.session_state.step > 1 else st.session_state.quiz1_choice
     
-    # Add 'fixed-arrow-visible' class if the arrow is fixed
+    up_opacity_initial = 1 if fixed_arrow == 'Up' else 0
+    down_opacity_initial = 1 if fixed_arrow == 'Down' else 0
+    
     up_fixed_class = 'fixed-arrow-visible' if up_opacity_initial == 1 else ''
     down_fixed_class = 'fixed-arrow-visible' if down_opacity_initial == 1 else ''
 
     force_up_arrow_svg = f"""
     <svg id="force-up" class="force-arrow-preview {up_fixed_class}" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{up_opacity_initial}; pointer-events: none; transition: opacity 0.1s;">
-        <line x1="12" y1="19" x2="12" y2="5"></line>
-        <polyline points="5 12 12 5 19 12"></polyline>
+             style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{up_opacity_initial}; pointer-events: none; transition: opacity 0.1s;">
+            <line x1="12" y1="19" x2="12" y2="5"></line>
+            <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
     """
 
     force_down_arrow_svg = f"""
     <svg id="force-down" class="force-arrow-preview {down_fixed_class}" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-          style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{down_opacity_initial}; pointer-events: none; transition: opacity 0.1s;">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <polyline points="5 12 12 19 19 12"></polyline>
+             style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:{down_opacity_initial}; pointer-events: none; transition: opacity 0.1s;">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <polyline points="5 12 12 19 19 12"></polyline>
     </svg>
     """
     
-    # 자석 위치: 전체 컨테이너 중심(150px)에 자석 너비의 절반(40px)을 빼서 중앙 정렬
     magnet_left_position = 110 
     
     html = f"""
@@ -175,13 +180,42 @@ def get_scene_html(motion, pole, animate=True):
     div {{
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     }}
-    /* New CSS rule to force visibility of fixed arrow */
     .force-arrow-preview.fixed-arrow-visible {{
         opacity: 1 !important; 
     }}
     </style>
     """
     return html
+
+# ---
+# 콜백 함수 정의
+# ---
+
+def handle_quiz1_choice(choice):
+    """퀴즈 1 선택을 처리하고 다음 단계로 이동합니다."""
+    # 퀴즈 1 선택을 세션 상태에 저장하여 시각화에 반영
+    st.session_state.quiz1_choice = choice
+    # 퀴즈 2로 넘어가서도 고정 화살표를 표시하기 위해 force_arrow_fixed에도 저장
+    st.session_state.force_arrow_fixed = choice
+    # 다음 단계(퀴즈 2)로 이동
+    st.session_state.step = 2
+
+def handle_quiz2_check(answer2, top_pole, explanation):
+    """퀴즈 2 선택을 처리하고 다음 단계로 이동 또는 오류 메시지를 표시합니다."""
+    if answer2 == f"윗면이 {top_pole}극":
+        st.session_state.step = 3
+        st.success("✅ 정답입니다! 이 유도 자극이 바로 퀴즈 ①의 자기력을 만들어냅니다.")
+    else:
+        st.error(f"❌ 오답이에요. 렌츠의 법칙에 따라 유도된 자극은 **{top_pole}극**이 되어야 합니다.")
+        st.info(explanation)
+
+def handle_quiz3_check(answer3, current):
+    """퀴즈 3 선택을 처리하고 다음 단계로 이동 또는 오류 메시지를 표시합니다."""
+    if answer3 == current:
+        st.session_state.step = 4
+        st.success("✅ 최종 정답입니다! 모든 단계를 정확히 이해했어요. 전자기 유도 현상을 완벽히 이해했네요 🎉")
+    else:
+        st.error(f"❌ 오답이에요. 퀴즈 ②의 결과에 오른손 법칙을 적용해 보세요. 정답은 **{current}**입니다.")
 
 
 # ---
@@ -199,190 +233,93 @@ if st.session_state.step == 0:
         st.session_state.step = 1
         st.session_state.quiz1_result = None
         st.session_state.force_arrow_fixed = None
-        st.query_params.clear()
+        st.session_state.quiz1_choice = None # 초기화
         st.rerun()
 
 elif st.session_state.step == 1:
     
-    # 먼저 query_params 확인 및 처리
-    if "choice" in st.query_params:
-        chosen_dir = st.query_params["choice"]
-        st.session_state.step = 2
-        st.session_state.force_arrow_fixed = chosen_dir
-        st.query_params.clear()
-        st.rerun()
-    
     st.subheader("퀴즈 ①: 코일이 자석에 가하는 자기력 방향")
     
-    correct_dir = "Up" if scenario["motion"] == "down" else "Down"
-    correct_text = "위쪽(밀어냄)" if correct_dir == "Up" else "아래쪽(끌어당김)"
+    st.warning("💡 **렌츠의 법칙**: 자속 변화를 **'방해'**하는 방향으로 유도 자기장이 형성됩니다.")
+    st.markdown("**코일이 자석에 가하는 힘의 방향을 선택하세요:**")
     
-    st.warning("💡 렌츠의 법칙: 자속 변화를 '방해'하는 방향으로 유도 자기장이 형성됩니다.")
-    st.markdown("**코일이 자석에 가하는 힘의 방향을 선택하세요 (마우스 커서를 올려 미리보기가 가능합니다):**")
-    
-    unique_key = str(uuid.uuid4())
-    
-    quiz1_full_html = f"""
-    <form method="get" action="" id="quiz-form-{unique_key}">
-        <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
-            
-            <input type="hidden" name="choice" id="choice-input-{unique_key}" value="" />
-            
-            <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
-                <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
-                    <button type="button" class="quiz-button" data-choice="Up">
-                        ⬆️ 위쪽 힘
-                    </button>
-                </div>
-                <div id="down-choice" class="quiz-choice-wrapper" style="width: 45%;">
-                    <button type="button" class="quiz-button" data-choice="Down">
-                        ⬇️ 아래쪽 힘
-                    </button>
-                </div>
-            </div>
-            
-            <div id="visualization-area">
-                {get_scene_html(scenario["motion"], scenario["pole"], animate=True)}
-            </div>
-        </div>
-        
-        <style>
-            .quiz-button {{
-                background-color: #f0f2f6;
-                color: #262730;
-                border: 1px solid #ccc;
-                border-radius: 0.5rem;
-                padding: 0.5rem 1rem;
-                width: 100%;
-                cursor: pointer;
-                font-size: 1rem;
-                font-weight: 600;
-                transition: background-color 0.2s, box-shadow 0.2s;
-            }}
-            .quiz-button:hover:not(.is-active) {{
-                background-color: #e0e0e0;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            }}
-            .quiz-button.is-active {{
-                box-shadow: 0 0 0 3px #1f77b4;
-                background-color: #dbeafe;
-            }}
-            #up-choice button {{
-                border: 2px solid #3b82f6;
-            }}
-            #down-choice button {{
-                border: 2px solid #ef4444;
-            }}
-            .force-arrow-preview.fixed-arrow-visible {{
-                opacity: 1 !important; 
-            }}
-        </style>
-        
-        <script>
-            const upButton = document.querySelector('#up-choice button');
-            const downButton = document.querySelector('#down-choice button');
-            const forceUp = document.getElementById('force-up');
-            const forceDown = document.getElementById('force-down');
-            const choiceInput = document.getElementById('choice-input-{unique_key}');
-            const quizForm = document.getElementById('quiz-form-{unique_key}');
-            
-            const handleMouseOver = (forceElement) => {{
-                if (!forceUp.classList.contains('fixed-arrow-visible') && !forceDown.classList.contains('fixed-arrow-visible')) {{
-                    forceElement.style.opacity = '1';
-                }}
-            }};
-            
-            const handleMouseOut = (forceElement) => {{
-                if (!forceUp.classList.contains('fixed-arrow-visible') && !forceDown.classList.contains('fixed-arrow-visible')) {{
-                    forceElement.style.opacity = '0';
-                }}
-            }};
-            
-            const handleClick = (choice, forceElement, otherForceElement, buttonElement) => {{
-                // 화살표 고정
-                forceUp.classList.remove('fixed-arrow-visible');
-                forceDown.classList.remove('fixed-arrow-visible');
-                forceUp.style.opacity = '0';
-                forceDown.style.opacity = '0';
+    # 퀴즈 1 시각화
+    st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
 
-                forceElement.classList.add('fixed-arrow-visible');
-                forceElement.style.opacity = '1'; 
-
-                document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
-                buttonElement.classList.add('is-active');
-                
-                choiceInput.value = choice; 
-                
-                // 폼 제출하여 다음 단계로 이동
-                quizForm.submit();
-            }};
-            
-            if (upButton && forceUp) {{
-                upButton.addEventListener('mouseover', () => handleMouseOver(forceUp));
-                upButton.addEventListener('mouseout', () => handleMouseOut(forceUp));
-                upButton.addEventListener('click', () => {{ 
-                    handleClick('Up', forceUp, forceDown, upButton);
-                }});
-            }}
-            
-            if (downButton && forceDown) {{
-                downButton.addEventListener('mouseover', () => handleMouseOver(forceDown));
-                downButton.addEventListener('mouseout', () => handleMouseOut(forceDown));
-                downButton.addEventListener('click', () => {{ 
-                    handleClick('Down', forceDown, forceUp, downButton);
-                }});
-            }}
-        </script>
-    </form>
-    """
-    
-    st.components.v1.html(quiz1_full_html, height=620)
+    # Streamlit 네이티브 버튼으로 변경 (선택 시 handle_quiz1_choice 콜백 함수 실행)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.button("⬆️ 위쪽 힘 (방해)", 
+                  on_click=handle_quiz1_choice, 
+                  args=('Up',), 
+                  use_container_width=True,
+                  key="quiz1_up")
+    with col2:
+        st.button("⬇️ 아래쪽 힘 (방해)", 
+                  on_click=handle_quiz1_choice, 
+                  args=('Down',), 
+                  use_container_width=True,
+                  key="quiz1_down")
 
 elif st.session_state.step == 2:
+    
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
     
+    # 퀴즈 1 정답 확인 및 피드백 (optional, but good for learning)
+    correct_dir = "Up" if scenario["motion"] == "down" else "Down"
+    chosen_dir = st.session_state.force_arrow_fixed
+    
+    if chosen_dir != correct_dir:
+        st.error(f"❌ 퀴즈 ① 오답! 렌츠의 법칙은 자속 변화를 **'방해'**합니다. 올바른 힘의 방향은 **{'위쪽(밀어냄)' if correct_dir == 'Up' else '아래쪽(끌어당김)'}**입니다.")
+    else:
+        st.success(f"✅ 퀴즈 ① 정답! 코일은 자석의 움직임을 **{'밀어내기 위해 위쪽' if chosen_dir == 'Up' else '끌어당기기 위해 아래쪽'}**으로 힘을 가합니다.")
+
+    # 퀴즈 2 정답 결정 및 설명
     if scenario["motion"] == "down":
         top_pole = scenario["pole"]
-        explanation = f"자석의 {scenario['pole']}극이 가까워지므로, 코일 윗면은 **밀어내기 위해** 같은 극인 {top_pole}극이 됩니다."
+        explanation = f"자석의 **{scenario['pole']}극**이 가까워지므로, 코일 윗면은 **밀어내기 위해** 같은 극인 **{top_pole}극**이 됩니다."
     else:
         top_pole = "S" if scenario["pole"] == "N" else "N"
-        explanation = f"자석의 {scenario['pole']}극이 멀어지므로, 코일 윗면은 **끌어당기기 위해** 반대 극인 {top_pole}극이 됩니다."
+        explanation = f"자석의 **{scenario['pole']}극**이 멀어지므로, 코일 윗면은 **끌어당기기 위해** 반대 극인 **{top_pole}극**이 됩니다."
 
+    # 퀴즈 2 시각화
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
 
     options = ["윗면이 N극", "윗면이 S극"]
-    answer2 = st.radio("코일의 윗면 자극을 선택하세요", options)
+    answer2 = st.radio("코일의 윗면 자극을 선택하세요", options, key="radio_quiz2")
     
-    if st.button("정답 확인 및 다음 단계 ➡️"):
-        if answer2 == f"윗면이 {top_pole}극":
-            st.session_state.step = 3
-            st.success("✅ 정답입니다! 이 유도 자극이 바로 퀴즈 ①의 자기력을 만들어냅니다.")
-        else:
-            st.error(f"❌ 오답이에요. 렌츠의 법칙에 따라 유도된 자극은 **{top_pole}극**이 되어야 합니다.")
-            st.info(explanation)
-        st.rerun()
-
+    # 콜백 함수 사용
+    st.button("정답 확인 및 다음 단계 ➡️", 
+              on_click=handle_quiz2_check, 
+              args=(answer2, top_pole, explanation), 
+              key="btn_check_quiz2")
+    
 elif st.session_state.step == 3:
     st.subheader("퀴즈 ③: 코일에 유도되는 전류 방향")
     
-    if (scenario["motion"] == "down" and scenario["pole"] == "N") or (scenario["motion"] == "up" and scenario["pole"] == "S"):
-        current = "반시계방향"
+    if scenario["motion"] == "down":
+        top_pole = scenario["pole"]
     else:
+        top_pole = "S" if scenario["pole"] == "N" else "N"
+        
+    if top_pole == "N":
+        current = "반시계방향"
+    else: # top_pole == "S"
         current = "시계방향"
         
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
         
-    st.warning("💡 오른손 법칙: 유도된 자극(퀴즈 ② 결과)을 오른손 엄지손가락으로 가리키고 코일을 감싸쥐면, 네 손가락 방향이 전류의 방향입니다.")
+    st.warning("💡 **오른손 법칙**: 유도된 자극(퀴즈 ② 결과)을 오른손 엄지손가락으로 가리키고 코일을 감싸쥐면, 네 손가락 방향이 전류의 방향입니다.")
+    st.info(f"💡 (참고: 퀴즈 ②에서 코일 윗면은 **{top_pole}극**이 유도되었습니다.)")
+
     options = ["시계방향", "반시계방향"]
-    answer3 = st.radio("전류의 방향을 선택하세요", options)
+    answer3 = st.radio("전류의 방향을 선택하세요 (코일 위에서 바라본 방향)", options, key="radio_quiz3")
     
-    if st.button("결과 보기 🎯"):
-        if answer3 == current:
-            st.session_state.step = 4
-            st.success("✅ 최종 정답입니다! 모든 단계를 정확히 이해했어요. 전자기 유도 현상을 완벽히 이해했네요 🎉")
-        else:
-            st.error(f"❌ 오답이에요. 퀴즈 ②의 결과에 오른손 법칙을 적용해 보세요. 정답은 **{current}**입니다.")
-        st.rerun()
+    # 콜백 함수 사용
+    st.button("결과 보기 🎯", 
+              on_click=handle_quiz3_check, 
+              args=(answer3, current), 
+              key="btn_check_quiz3")
         
 elif st.session_state.step == 4:
     st.subheader("✅ 학습 완료")
@@ -400,4 +337,5 @@ elif st.session_state.step == 4:
             st.session_state.scenario = random.choice(list(scenarios.keys()))
         st.session_state.quiz1_result = None
         st.session_state.force_arrow_fixed = None
+        st.session_state.quiz1_choice = None
         st.rerun()
