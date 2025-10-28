@@ -11,7 +11,7 @@ st.markdown("### 자석이 코일 중심 위에서 반복적으로 움직이는 
 # 1: N극이 가까워짐 (down, N)
 # 2: S극이 가까워짐 (down, S)
 # 3: N극이 멀어짐 (up, N)
-# 4: S극이 멀어짐 (up, S)
+# 4: S극이 멀어지는 경우 (up, S)
 scenarios = {
     1: {"desc": "N극이 가까워지는 경우", "motion": "down", "pole": "N"},
     2: {"desc": "S극이 가까워지는 경우", "motion": "down", "pole": "S"},
@@ -143,27 +143,33 @@ def get_scene_html(motion, pole, animate=True):
     """
     # =================================================================
 
-    # Force Arrow SVGs (퀴즈 1의 유도력 미리보기용 - 숨겨진 상태)
-    force_y_pos = coil_top_y - 30 # Y=100
+    # --- 수정된 부분: 유도력 화살표 크기, 두께, 위치 조정 ---
+    force_arrow_size = 150 # 3x larger size
+    force_arrow_stroke_width = 6 # 2x thicker stroke
+    coil_top_y_svg = 130 # 코일 윗면 SVG Y 좌표
+    
+    # 화살표 SVG를 coil_top_y를 기준으로 수직 중앙에 배치 (130 - 150/2 = 55)
+    force_y_pos = coil_top_y_svg - (force_arrow_size / 2)
+
     force_arrow_color = "#E94C3D" 
-    force_arrow_size = 50
 
     # Upward force arrow (Hidden by default, ID for JS targeting)
     force_up_arrow_svg = f"""
-    <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-         style="position:absolute; left:calc(50% - {force_arrow_size/2}px); top: {force_y_pos}px; transform: translateX(-75px); opacity:0; pointer-events: none; transition: opacity 0.1s;">
+    <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
+         style="position:absolute; left:calc(50% - {force_arrow_size/2}px); top: {force_y_pos}px; opacity:0; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="19" x2="12" y2="5"></line>
         <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
     """
     # Downward force arrow (Hidden by default, ID for JS targeting)
     force_down_arrow_svg = f"""
-    <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-         style="position:absolute; left:calc(50% - {force_arrow_size/2}px); top: {force_y_pos}px; transform: translateX(-75px); opacity:0; pointer-events: none; transition: opacity 0.1s;">
+    <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
+         style="position:absolute; left:calc(50% - {force_arrow_size/2}px); top: {force_y_pos}px; opacity:0; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <polyline points="5 12 12 19 19 12"></polyline>
     </svg>
     """
+    # -----------------------------------------------------------------
     
     # 자석의 색깔, 극성, 애니메이션을 포함한 HTML 구조
     html = f"""
@@ -193,12 +199,12 @@ def get_scene_html(motion, pole, animate=True):
       </div>
 
       <!-- 코일 (SVG를 사용하여 입체적으로 표현) - 너비 300 유지 --><svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
-        <!-- 1. 코일 몸통 사각형 (배경) - 높이 180px (Y: 130~310) --><rect x="50" y="{coil_top_y}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
+        <!-- 1. 코일 몸통 사각형 (배경) - 높이 180px (Y: 130~310) --><rect x="50" y="{coil_top_y_svg}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
         <!-- 2. 코일 아랫면 타원 (밑면) - Y=310 --><ellipse cx="130" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
         
         <!-- 3. 코일 감은 선 (시계방향 헬릭스 및 외부 연결선) -->{winding_svg}
 
-        <!-- 4. 코일 윗면 타원 (윗면/개구부) - Y=130 --><ellipse cx="130" cy="{coil_top_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
+        <!-- 4. 코일 윗면 타원 (윗면/개구부) - Y=130 --><ellipse cx="130" cy="{coil_top_y_svg}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
       </svg>
     </div>
 
