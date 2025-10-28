@@ -4,8 +4,8 @@ import uuid
 
 st.set_page_config(page_title="전자기 유도 학습", layout="centered")
 
-st.title("🧲 전자기 유도 학습 앱")
-st.markdown("### 자석이 코일 중심 위에서 반복적으로 움직이는 모습을 관찰하세요!")
+st.title("전자기 유도 학습 앱")
+st.markdown("### 자석이 코일 사이의 거리가 바뀔 때의 유도 전류를 확인해보세요!")
 
 # 시나리오 정의
 # 1: N극이 가까워짐 (down, N)
