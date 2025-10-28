@@ -31,7 +31,7 @@ def draw_scene(motion, pole, animate=True):
     @keyframes floatMove {{
         0%   {{ transform: translateY(0); }}
         50%  {{ transform: translateY({move_dir}); }}
-        51%  {{ transform: translateY(0); }}
+        80%  {{ transform: translateY(0); }}  /* 복귀 시간 3배로 느리게 */
         100% {{ transform: translateY(0); }}
     }}
     """
@@ -43,7 +43,7 @@ def draw_scene(motion, pole, animate=True):
       <div style="display:flex; align-items:center; justify-content:center; position:relative; top:0;">
         <div style="
             width:80px; height:160px;
-            background:#bbb; border:4px solid #222;
+            background:#ccc; border:4px solid #222;
             display:flex; align-items:flex-end; justify-content:center;
             position:relative;
             animation:{'floatMove 3s ease-in-out infinite' if animate else 'none'};">
@@ -51,15 +51,11 @@ def draw_scene(motion, pole, animate=True):
         </div>
       </div>
 
-      <!-- 코일 (정중앙, 원통형) -->
+      <!-- 코일 -->
       <svg width="260" height="240" viewBox="0 0 260 240" style="margin-top:-20px;">
-        <!-- 윗면 -->
         <ellipse cx="130" cy="130" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
-        <!-- 측면 -->
         <rect x="50" y="130" width="160" height="60" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
-        <!-- 아랫면 -->
         <ellipse cx="130" cy="190" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
-        <!-- 전선 (수평 감김) -->
         {"".join([f'<line x1="50" y1="{135+i*5}" x2="210" y2="{135+i*5}" stroke="#cc6600" stroke-width="2"/>' for i in range(10)])}
       </svg>
     </div>
