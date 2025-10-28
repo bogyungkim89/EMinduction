@@ -1,3 +1,4 @@
+elif st.session_state.step == 1:
     # --- 수정된 첫 번째 퀴즈 HTML ---
     quiz1_full_html = f"""
     <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
@@ -55,12 +56,11 @@
             }}
 
             function handleClick(dir) {{
-                // 판정
+                // 정답 확인 후 Streamlit 페이지 새로고침
                 if (dir === correctDir) {{
-                    // Streamlit에 메시지 전달 (정답 → step 2)
-                    window.parent.postMessage({{ isCorrect: true }}, '*');
+                    window.location.search = '?correct=true';
                 }} else {{
-                    window.parent.postMessage({{ isCorrect: false }}, '*');
+                    window.location.search = '?correct=false';
                 }}
             }}
 
@@ -76,5 +76,13 @@
     """
     st.components.v1.html(quiz1_full_html, height=620)
 
-    # JS 메시지 수신 → Streamlit Python 측 반응
-    msg = st.experimental_get_query_params().get("msg")
+    # 정답 여부 판정
+    query = st.query_params
+    if "correct" in query:
+        if query["correct"] == "true":
+            st.session_state.step = 2
+            st.success("✅ 정답입니다! 자동으로 다음 단계로 넘어갑니다.")
+        else:
+            st.error("❌ 오답이에요. 자석의 움직임을 방해하는 방향으로 힘이 작용해야 해요.")
+        del st.query_params["correct"]
+        st.rerun()
