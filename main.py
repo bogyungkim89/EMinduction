@@ -76,59 +76,64 @@ def draw_scene(motion, pole, animate=True):
     # =================================================================
     # 코일 감은 선 (시계방향 헬릭스 Path) 생성
     # - 원통 앞면 (보이는 부분)만 그립니다.
-    # - 코일 높이 180px, 전선 간격 16.5px (5턴)
+    # - 원통 왼쪽 세로선을 따라 내려오는 전선은 그리지 않습니다.
     # -----------------------------------------------------------------
     
     # 코일 몸통 Y 좌표 설정: 높이 180px
     coil_height = 180
     coil_top_y = 130 # 코일 윗면 중심 Y 좌표
     coil_bottom_y = coil_top_y + coil_height # 310 (코일 아랫면 중심 Y 좌표)
-
+    
     # 전선 감기 시작 및 종료 Y 좌표 (코일 윗면/아랫면 타원 위/아래에서 시작/종료)
     wire_start_y = coil_top_y + 10  # 윗면 타원 아래에서 시작 (130 + 10)
     wire_end_y = coil_bottom_y - 10 # 아랫면 타원 위에서 종료 (310 - 10)
 
-    # 전선 간격 (총 5턴 = 4개의 간격 + 시작/끝)
-    num_turns = 5
+    # 전선 감긴 횟수 변경: 7턴 (1.5배 증가)
+    num_turns = 7
     # 전체 감기는 Y 범위 (wire_end_y - wire_start_y) 를 턴 수로 나눈다.
     step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
     
     start_x = 210 # 코일 오른쪽 끝 (Rx=80, Center X=130. 130+80=210)
     end_x = 50    # 코일 왼쪽 끝 (130-80=50)
 
-    # 1. 오른쪽 전선 진입 (곡선 처리)
-    # (240, 100)에서 시작 -> Q 곡선으로 (start_x, wire_start_y)로 부드럽게 진입
-    external_wire_in = f"M 240 {coil_top_y - 30} Q 225 {coil_top_y - 10} {start_x} {wire_start_y}"
+    # 1. 오른쪽 전선 진입 (부드러운 곡선 처리 개선)
+    # (240, 90)에서 시작 -> Q 곡선 제어점을 (215, 120)로 설정하여 부드럽게 진입
+    external_wire_in = f"M 240 {coil_top_y - 40} Q 215 {coil_top_y - 10} {start_x} {wire_start_y}"
     
     winding_front_segments = []
-    # 코일 앞면 (오른쪽에서 왼쪽으로 아랫쪽 아크)만 그립니다.
-    # 시계방향 감기 -> 오른쪽에서 들어와서 앞면에서 오른쪽->왼쪽으로 내려감
     
     # 첫 아크 시작점
     winding_front_segments.append(f"M {start_x} {wire_start_y}")
 
-    # 5개의 턴에 해당하는 앞면 아크를 그립니다.
+    # 7개의 턴에 해당하는 앞면 아크를 그립니다.
     for i in range(num_turns): 
         current_y = wire_start_y + i * step_y 
-        next_y = wire_start_y + (i + 1) * step_y if i < num_turns -1 else wire_end_y
         
         # Front Arc (Visible, Right to Left, Lower half, sweep-flag=1)
-        # 현재 위치에서 왼쪽으로 (end_x) 다음 Y 위치로 이동하는 아크
+        # 현재 위치에서 왼쪽 끝 (end_x)의 다음 Y 위치로 이동하는 아크
+        arc_end_y = wire_start_y + (i + 0.5) * step_y # 아크의 끝점을 중간 y로 설정 (시각적 개선을 위해)
+        if i == num_turns - 1:
+            arc_end_y = wire_end_y # 마지막 턴은 최종 종료 지점으로 설정
+
+        # 아크를 그리는 방식 변경: 한 아크가 오른쪽 끝에서 왼쪽 끝으로 이동하며 y축 변화를 일으킴
         arc = f"A 80 22 0 0 1 {end_x} {current_y}"
         winding_front_segments.append(arc)
         
-        if i < num_turns -1: # 마지막 턴이 아니면 다음 아크 시작점을 추가
-            winding_front_segments.append(f"M {end_x} {current_y} L {end_x} {next_y}") # 왼쪽 수직선 (뒷면이 가리는 부분)을 건너뛰고 다음 앞면 아크 시작점으로 이동
-            winding_front_segments.append(f"M {start_x} {next_y}") # 다음 앞면 아크 시작점으로 점프 (직접 연결하지 않고 끊어서 뒷면 가려진 부분 처리)
+        if i < num_turns -1:
+            next_y = wire_start_y + (i + 1) * step_y 
+            
+            # **원통 왼쪽 세로선 제거**를 위해 왼쪽 끝(end_x)에서 다음 오른쪽 시작점(start_x)으로 점프(M)
+            # 수직선 L {end_x} {next_y} 대신 바로 다음 아크의 시작점인 {start_x} {next_y}로 이동
+            winding_front_segments.append(f"M {start_x} {next_y}")
 
 
     winding_path_d = " ".join(winding_front_segments)
 
-    # 2. 오른쪽 전선 빠져나감 (곡선 처리)
+    # 2. 오른쪽 전선 빠져나감 (부드러운 곡선 처리 개선)
     exit_y_coil = wire_end_y # 코일에서 빠져나오는 지점 Y
-    exit_y_end = coil_bottom_y + 30 # 최종 출구 Y 좌표
-    # (start_x, exit_y_coil)에서 시작 -> Q 곡선으로 (240, exit_y_end)로 부드럽게 빠져나감
-    external_wire_out = f"M {start_x} {exit_y_coil} Q 225 {coil_bottom_y + 10} 240 {exit_y_end}" 
+    exit_y_end = coil_bottom_y + 40 # 최종 출구 Y 좌표
+    # (start_x, exit_y_coil)에서 시작 -> Q 곡선 제어점을 (215, 320)로 설정하여 부드럽게 빠져나감
+    external_wire_out = f"M {start_x} {exit_y_coil} Q 215 {coil_bottom_y + 20} 240 {exit_y_end}" 
     
     # 헬릭스 Path 및 외부 연결선 통합
     winding_svg = f"""
@@ -139,7 +144,7 @@ def draw_scene(motion, pole, animate=True):
     # =================================================================
     
     # 자석의 색깔, 극성, 애니메이션을 포함한 HTML 구조
-    # SVG 높이와 뷰박스 조정 (Max Y=335 고려, 400으로 설정)
+    # SVG 높이와 뷰박스 조정 (Max Y=350 고려, 400으로 설정)
     html = f"""
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px;">
         
