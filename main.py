@@ -74,7 +74,7 @@ def draw_scene(motion, pole, animate=True):
     """
     
     # =================================================================
-    # 코일 감은 선 (시계방향 헬릭스 Path) 생성
+    # 코일 및 전선 경로 정의
     # -----------------------------------------------------------------
     
     # 코일 몸통 Y 좌표 설정: 높이 180px
@@ -82,30 +82,36 @@ def draw_scene(motion, pole, animate=True):
     coil_top_y = 130 # 코일 윗면 중심 Y 좌표
     coil_bottom_y = coil_top_y + coil_height # 310 (코일 아랫면 중심 Y 좌표)
     
-    # 전선 감기 시작 및 종료 Y 좌표 (코일 윗면/아랫면 타원 위/아래에서 시작/종료)
-    wire_start_y = coil_top_y + 10  # 윗면 타원 아래에서 시작 (130 + 10 = 140)
+    # 전선 감기 시작 Y 좌표 (위쪽 외부 전선 Y 좌표)
+    wire_start_y = coil_top_y + 10  # 140
     
-    # 아래쪽 전선 Y 좌표를 원래 위치로 복원합니다. (310 - 10 = 300)
-    wire_end_y = coil_bottom_y - 10 
+    # 코일 내부 와인딩 종료 Y 좌표 (300. 전선 간격 유지를 위해 사용)
+    wire_end_y_winding = coil_bottom_y - 10 
     
-    # 전선 감긴 횟수 변경: 7턴
+    # 전선 감긴 횟수: 7턴
     num_turns = 7
-    # 전체 감기는 Y 범위 (wire_end_y - wire_start_y) 를 턴 수로 나눈다.
-    step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
+    # 코일 내부 전선 간격 (Y_end - Y_start) / (턴 수 - 1)
+    step_y = (wire_end_y_winding - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
     
-    start_x = 210 # 코일 오른쪽 끝 (Rx=80, Center X=130. 130+80=210)
-    end_x = 50    # 코일 왼쪽 끝 (130-80=50)
+    start_x = 210 # 코일 오른쪽 끝 (130 + 80 = 210)
+    end_x = 50    # 코일 왼쪽 끝 (130 - 80 = 50)
 
-    # 전선 길이를 2.5배로 늘리고 X 좌표 업데이트 (원래 길이 30 * 2.5 = 75)
-    exit_x_end = start_x + 75 # 210 + 75 = 285
+    # 외부 수평 전선 길이를 2.5배로 늘린 X 좌표 (210 + 75 = 285)
+    exit_x_end = start_x + 75 
 
-    # 1. 오른쪽 전선 진입 (수평 직선)
-    # ({exit_x_end}, wire_start_y)에서 시작하여 {start_x, wire_start_y}로 수평 직선 연결
+    # [중요 수정] 아래쪽 외부 전선이 평행이동할 새로운 Y 좌표 계산
+    # 간격 (300 - 140 = 160)의 절반 (80px)만큼 위로 이동
+    winding_gap = wire_end_y_winding - wire_start_y # 160
+    move_up_distance = winding_gap / 2 # 80
+    external_wire_y = wire_end_y_winding - move_up_distance # 300 - 80 = 220 
+    
+    # ---------------------------------------------------------------
+    # 1. 오른쪽 전선 진입 (수평 직선) - Y 좌표 140
     external_wire_in = f"M {exit_x_end} {wire_start_y} L {start_x} {wire_start_y}"
     
     winding_front_segments = []
     
-    # 첫 아크 시작점
+    # 첫 아크 시작점 (210, 140)
     winding_front_segments.append(f"M {start_x} {wire_start_y}")
 
     # 7개의 턴에 해당하는 앞면 아크를 그립니다.
@@ -113,33 +119,38 @@ def draw_scene(motion, pole, animate=True):
         current_y = wire_start_y + i * step_y 
         
         # Front Arc (Visible, Right to Left, Lower half, sweep-flag=1)
+        # 마지막 아크는 (210, 300) -> (50, 300)
         arc = f"A 80 22 0 0 1 {end_x} {current_y}"
         winding_front_segments.append(arc)
         
         if i < num_turns -1:
             next_y = wire_start_y + (i + 1) * step_y 
             
-            # 원통 왼쪽 세로선 제거를 위해 왼쪽 끝(end_x)에서 다음 오른쪽 시작점(start_x)으로 점프(M)
+            # (50, current_y)에서 다음 (210, next_y)로 점프
             winding_front_segments.append(f"M {start_x} {next_y}")
-
-
+            
     winding_path_d = " ".join(winding_front_segments)
 
-    # 2. 오른쪽 전선 빠져나감 (수평 직선)
-    exit_y_coil = wire_end_y # 원래 위치로 복원된 Y 좌표 사용
-    # (start_x, exit_y_coil)에서 시작하여 {exit_x_end, exit_y_coil}로 수평 직선 연결
-    external_wire_out = f"M {start_x} {exit_y_coil} L {exit_x_end} {exit_y_coil}" 
+    # ---------------------------------------------------------------
+    # 2. 코일 이탈 경로 (세그먼트 분리)
+    # ---------------------------------------------------------------
+    
+    exit_path_d = f"""
+        M {end_x} {wire_end_y_winding}                 <!-- 1. 마지막 아크 끝점 (50, 300)에서 시작 -->
+        L {start_x} {wire_end_y_winding}                <!-- 2. 코일 바닥 수평 연결 (210, 300) -->
+        L {start_x} {external_wire_y}                   <!-- 3. 수직 드롭/상승 (210, 220) -->
+        L {exit_x_end} {external_wire_y}                <!-- 4. 외부 수평 전선 (285, 220) -->
+    """
     
     # 헬릭스 Path 및 외부 연결선 통합
     winding_svg = f"""
         <!-- 진입선 (수평 직선) --><path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
         <!-- 코일 감은 부분 (앞면만) --><path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
-        <!-- 이탈선 (수평 직선) --><path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <!-- 코일 이탈 경로 (바닥 연결 + 수직 이동 + 외부 전선) --><path d="{exit_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
     # =================================================================
     
     # 자석의 색깔, 극성, 애니메이션을 포함한 HTML 구조
-    # SVG 높이와 뷰박스 조정 (늘어난 전선 길이 수용을 위해 너비 300 유지)
     html = f"""
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px;">
         
