@@ -77,6 +77,7 @@ def draw_scene(motion, pole, animate=True):
     # 코일 감은 선 (시계방향 헬릭스 Path) 생성
     # - 원통 앞면 (보이는 부분)만 그립니다.
     # - 원통 왼쪽 세로선을 따라 내려오는 전선은 그리지 않습니다.
+    # - 외부 연결선은 수평 직선으로 변경되었습니다.
     # -----------------------------------------------------------------
     
     # 코일 몸통 Y 좌표 설정: 높이 180px
@@ -88,7 +89,7 @@ def draw_scene(motion, pole, animate=True):
     wire_start_y = coil_top_y + 10  # 윗면 타원 아래에서 시작 (130 + 10)
     wire_end_y = coil_bottom_y - 10 # 아랫면 타원 위에서 종료 (310 - 10)
 
-    # 전선 감긴 횟수 변경: 7턴 (1.5배 증가)
+    # 전선 감긴 횟수 변경: 7턴
     num_turns = 7
     # 전체 감기는 Y 범위 (wire_end_y - wire_start_y) 를 턴 수로 나눈다.
     step_y = (wire_end_y - wire_start_y) / (num_turns -1) if num_turns > 1 else 0 
@@ -96,9 +97,10 @@ def draw_scene(motion, pole, animate=True):
     start_x = 210 # 코일 오른쪽 끝 (Rx=80, Center X=130. 130+80=210)
     end_x = 50    # 코일 왼쪽 끝 (130-80=50)
 
-    # 1. 오른쪽 전선 진입 (부드러운 곡선 처리 개선)
-    # (240, 90)에서 시작 -> Q 곡선 제어점을 (215, 120)로 설정하여 부드럽게 진입
-    external_wire_in = f"M 240 {coil_top_y - 40} Q 215 {coil_top_y - 10} {start_x} {wire_start_y}"
+    # 1. 오른쪽 전선 진입 (수평 직선으로 변경)
+    # (240, wire_start_y)에서 시작하여 {start_x, wire_start_y}로 수평 직선 연결
+    # Z-index를 위해 한 번 꺾어서 처리
+    external_wire_in = f"M 240 {wire_start_y} L {start_x} {wire_start_y}"
     
     winding_front_segments = []
     
@@ -110,41 +112,34 @@ def draw_scene(motion, pole, animate=True):
         current_y = wire_start_y + i * step_y 
         
         # Front Arc (Visible, Right to Left, Lower half, sweep-flag=1)
-        # 현재 위치에서 왼쪽 끝 (end_x)의 다음 Y 위치로 이동하는 아크
-        arc_end_y = wire_start_y + (i + 0.5) * step_y # 아크의 끝점을 중간 y로 설정 (시각적 개선을 위해)
-        if i == num_turns - 1:
-            arc_end_y = wire_end_y # 마지막 턴은 최종 종료 지점으로 설정
-
-        # 아크를 그리는 방식 변경: 한 아크가 오른쪽 끝에서 왼쪽 끝으로 이동하며 y축 변화를 일으킴
         arc = f"A 80 22 0 0 1 {end_x} {current_y}"
         winding_front_segments.append(arc)
         
         if i < num_turns -1:
             next_y = wire_start_y + (i + 1) * step_y 
             
-            # **원통 왼쪽 세로선 제거**를 위해 왼쪽 끝(end_x)에서 다음 오른쪽 시작점(start_x)으로 점프(M)
-            # 수직선 L {end_x} {next_y} 대신 바로 다음 아크의 시작점인 {start_x} {next_y}로 이동
+            # 원통 왼쪽 세로선 제거를 위해 왼쪽 끝(end_x)에서 다음 오른쪽 시작점(start_x)으로 점프(M)
             winding_front_segments.append(f"M {start_x} {next_y}")
 
 
     winding_path_d = " ".join(winding_front_segments)
 
-    # 2. 오른쪽 전선 빠져나감 (부드러운 곡선 처리 개선)
+    # 2. 오른쪽 전선 빠져나감 (수평 직선으로 변경)
     exit_y_coil = wire_end_y # 코일에서 빠져나오는 지점 Y
-    exit_y_end = coil_bottom_y + 40 # 최종 출구 Y 좌표
-    # (start_x, exit_y_coil)에서 시작 -> Q 곡선 제어점을 (215, 320)로 설정하여 부드럽게 빠져나감
-    external_wire_out = f"M {start_x} {exit_y_coil} Q 215 {coil_bottom_y + 20} 240 {exit_y_end}" 
+    exit_x_end = 240 # 최종 출구 X 좌표
+    # (start_x, exit_y_coil)에서 시작하여 {exit_x_end, exit_y_coil}로 수평 직선 연결
+    external_wire_out = f"M {start_x} {exit_y_coil} L {exit_x_end} {exit_y_coil}" 
     
     # 헬릭스 Path 및 외부 연결선 통합
     winding_svg = f"""
-        <!-- 진입선 (곡선) --><path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <!-- 진입선 (수평 직선) --><path d="{external_wire_in}" fill="none" stroke="#cc6600" stroke-width="3" />
         <!-- 코일 감은 부분 (앞면만) --><path d="{winding_path_d}" fill="none" stroke="#cc6600" stroke-width="3" />
-        <!-- 이탈선 (곡선) --><path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
+        <!-- 이탈선 (수평 직선) --><path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
     # =================================================================
     
     # 자석의 색깔, 극성, 애니메이션을 포함한 HTML 구조
-    # SVG 높이와 뷰박스 조정 (Max Y=350 고려, 400으로 설정)
+    # SVG 높이와 뷰박스 조정 (최대 Y 고려하여 400으로 유지)
     html = f"""
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px;">
         
