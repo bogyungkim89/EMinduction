@@ -198,7 +198,8 @@ if st.session_state.step == 0:
 
 elif st.session_state.step == 1:
     st.subheader("퀴즈 ①: 코일이 자석에 가하는 자기력 방향")
-    draw_scene(scenario["motion"], scenario["pole"], animate=False)
+    # 퀴즈 화면에도 애니메이션 적용 (첫 화면과 동일한 배율/위치)
+    draw_scene(scenario["motion"], scenario["pole"], animate=True)
     
     # 렌츠의 법칙: 변화를 방해하는 방향으로 자기력 작용
     correct = "위쪽(밀어냄)" if scenario["motion"] == "down" else "아래쪽(끌어당김)"
@@ -217,7 +218,8 @@ elif st.session_state.step == 1:
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
-    draw_scene(scenario["motion"], scenario["pole"], animate=False)
+    # 퀴즈 화면에도 애니메이션 적용 (첫 화면과 동일한 배율/위치)
+    draw_scene(scenario["motion"], scenario["pole"], animate=True)
 
     # 유도되는 극성 계산 (퀴즈 1의 결과와 일치)
     if scenario["motion"] == "down": # 가까워지면 밀어내야 하므로 같은 극
@@ -241,7 +243,8 @@ elif st.session_state.step == 2:
 
 elif st.session_state.step == 3:
     st.subheader("퀴즈 ③: 코일에 유도되는 전류 방향")
-    draw_scene(scenario["motion"], scenario["pole"], animate=False)
+    # 퀴즈 화면에도 애니메이션 적용 (첫 화면과 동일한 배율/위치)
+    draw_scene(scenario["motion"], scenario["pole"], animate=True)
 
     # 앙페르/오른손 법칙으로 전류 방향 계산
     if (scenario["motion"] == "down" and scenario["pole"] == "N") or (scenario["motion"] == "up" and scenario["pole"] == "S"):
@@ -265,7 +268,8 @@ elif st.session_state.step == 4:
     st.subheader("✅ 학습 완료")
     st.success("축하합니다! 전자기 유도 현상(렌츠의 법칙)의 세 단계를 모두 정확히 이해하고 적용했습니다.")
     st.markdown(f"**풀이한 상황:** {scenario['desc']}")
-    draw_scene(scenario["motion"], scenario["pole"], animate=False)
+    # 완료 화면에도 애니메이션 적용 (첫 화면과 동일한 배율/위치)
+    draw_scene(scenario["motion"], scenario["pole"], animate=True)
     
     if st.button("새로운 상황으로 다시 시작"):
         st.session_state.step = 0
