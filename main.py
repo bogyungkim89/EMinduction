@@ -342,6 +342,13 @@ elif st.session_state.step == 1:
             
         quiz1_correct = (st.session_state.force_arrow_fixed == correct_force_direction)
 
+            if st.button("다음 ➡️"):
+        st.session_state.step = 1
+        st.session_state.quiz1_result = None
+        st.session_state.force_arrow_fixed = None
+        st.query_params.clear()
+        st.rerun()
+
         if st.button("정답 확인 및 다음 단계 ⏭️"):
             if quiz1_correct:
                 # 정답일 경우 퀴즈 2로 이동
