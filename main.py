@@ -28,10 +28,21 @@ if "result_message" not in st.session_state:
 scenario = scenarios[st.session_state.scenario]
 
 
-# --- 시각화 HTML 함수 ---
+# --- 시각화 HTML 함수 (수정됨) ---
 def get_scene_html(motion, pole, animate=True):
     pole_color = "red" if pole == "N" else "blue"
-    move_dir = "80px" if motion == "down" else "-80px"
+    
+    # 움직이는 범위와 방향 설정 (80px 대신 60px로 조정하여 안정화)
+    move_distance = 60
+    move_dir_down = f"{move_distance}px"
+    move_dir_up = f"-{move_distance}px"
+    
+    # 자석이 내려갈 때 (0 -> 60 -> 0)
+    if motion == "down":
+        move_dir_end = move_dir_down
+    # 자석이 올라갈 때 (0 -> -60 -> 0)
+    else:
+        move_dir_end = move_dir_up
 
     # 화살표 SVG 정의
     arrow_color = "#4CAF50"
@@ -57,15 +68,20 @@ def get_scene_html(motion, pole, animate=True):
         </svg>
         """
 
+    # 애니메이션 정의 (움직임이 더 확실하도록 수정)
     anim = f"""
     @keyframes floatMove {{
-        0%   {{ transform: translateY(0); }}
-        50%  {{ transform: translateY({move_dir}); }}
+        0%   {{ transform: translateY(0); }}
+        50%  {{ transform: translateY({move_dir_end}); }}
         100% {{ transform: translateY(0); }}
     }}
     """
+    
+    # 퀴즈 단계에서는 애니메이션을 멈추도록 설정 (step이 0인 경우에만 애니메이션 적용)
+    is_animating = st.session_state.step == 0 
+    animation_style = f"floatMove 2.8s ease-in-out infinite" if is_animating else "none"
 
-    # --- 코일 SVG 구성 ---
+    # --- 코일 SVG 구성 (변동 없음) ---
     coil_offset_x = 20
     coil_height = 180
     coil_top_y_svg = 130
@@ -97,7 +113,7 @@ def get_scene_html(motion, pole, animate=True):
         <path d="{external_wire_out}" fill="none" stroke="#cc6600" stroke-width="3" />
     """
 
-    # --- 유도력 화살표 ---
+    # --- 유도력 화살표 (변동 없음) ---
     force_arrow_size = 50
     force_arrow_color = "#E94C3D"
     coil_center_x = 130 + coil_offset_x
@@ -126,27 +142,30 @@ def get_scene_html(motion, pole, animate=True):
     </svg>
     """
 
-    # --- 자석 위치 ---
+    # --- 자석 위치 (컨테이너 수정) ---
     coil_center_x = 130 + coil_offset_x
     magnet_left_position = coil_center_x - 40
-
+    
+    # 🌟 자석 컨테이너 높이 및 초기 위치 조정: 160px -> 200px (코일 위 여유 공간 확보)
     html = f"""
     <div id="scene" style="position:relative; width:300px; margin:auto; margin-top:10px;">
         {force_up_arrow_svg}
         {force_down_arrow_svg}
-        <div style="position:relative; height:160px; display:flex; justify-content:center;">
+        <div style="position:relative; height:200px; display:flex; justify-content:center;"> 
             <div style="
                 width:80px; height:160px; background:#ccc; border:4px solid #222; border-radius:10px;
-                display:flex; align-items:flex-end; justify-content:center; position:absolute; left:{magnet_left_position}px;
-                animation:{'floatMove 2.8s ease-in-out infinite' if animate else 'none'};">
+                display:flex; align-items:flex-end; justify-content:center; 
+                position:absolute; 
+                left:{magnet_left_position}px;
+                top: 0px; /* 초기 위치를 상단으로 고정 */
+                animation:{animation_style};">
                 <div style="font-size:56px; font-weight:bold; color:{pole_color}; margin-bottom:2px;">
                     {pole}
                 </div>
-                {arrow_svg if animate else ''}
+                {arrow_svg if is_animating else ''}
             </div>
         </div>
-        <svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
-            <rect x="{50 + coil_offset_x}" y="{coil_top_y_svg}" width="160" height="{coil_height}"
+        <svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-60px;"> <rect x="{50 + coil_offset_x}" y="{coil_top_y_svg}" width="160" height="{coil_height}"
                     fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
             <ellipse cx="{130 + coil_offset_x}" cy="{coil_bottom_y}" rx="80" ry="22"
                             fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
@@ -176,7 +195,7 @@ if step == 0:
     if st.button("퀴즈 시작하기 ➡️"):
         st.session_state.step = 1
         st.session_state.force_arrow_fixed = None
-        st.rerun() # ⬅️ 수정됨
+        st.rerun() # st.rerun() 적용
 
 # 2️⃣ 단계 1: 자기력 방향 퀴즈
 elif step == 1:
@@ -197,13 +216,14 @@ elif step == 1:
     if st.session_state.force_arrow_fixed:
         if st.button("다음으로 넘어가기 ⏭️"):
             st.session_state.step = 2
-            st.rerun() # ⬅️ 수정됨
+            st.rerun() # st.rerun() 적용
 
 # 3️⃣ 단계 2: 윗면 자극 퀴즈
 elif step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
-    st.session_state.result_message = ""
-
+    # result_message는 단계가 넘어갈 때마다 초기화됩니다.
+    
+    # 퀴즈 로직 (변동 없음)
     if scenario["motion"] == "down":
         top_pole = scenario["pole"]
         explanation = f"자석의 **{scenario['pole']}극이 가까워지므로**, 코일 윗면은 **같은 극({top_pole})**이 됩니다."
@@ -220,12 +240,13 @@ elif step == 2:
             st.session_state.step = 3
         else:
             st.session_state.result_message = f"❌ 오답입니다. {explanation}"
-        st.rerun() # ⬅️ 수정됨
+        st.rerun() # st.rerun() 적용
 
 # 4️⃣ 단계 3: 전류 방향 퀴즈
 elif step == 3:
     st.subheader("퀴즈 ③: 코일에 유도되는 전류 방향")
 
+    # 퀴즈 로직 (변동 없음)
     if (scenario["motion"] == "down" and scenario["pole"] == "N") or (scenario["motion"] == "up" and scenario["pole"] == "S"):
         current = "반시계방향"
     else:
@@ -241,18 +262,21 @@ elif step == 3:
             st.session_state.step = 4
         else:
             st.session_state.result_message = f"❌ 오답이에요. 정답은 **{current}**입니다."
-        st.rerun() # ⬅️ 수정됨
+        st.rerun() # st.rerun() 적용
 
 # 5️⃣ 단계 4: 완료 화면
 elif step == 4:
     st.subheader("✅ 학습 완료")
     st.success("축하합니다! 전자기 유도(렌츠의 법칙)의 모든 단계를 완성했습니다.")
     st.markdown(f"**풀이한 상황:** {scenario['desc']}")
-    st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"]), height=520)
+    
+    # 완료 단계에서는 자석을 코일 중앙에 정지된 상태로 보여줍니다.
+    st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=False), height=520) 
 
     if st.button("새로운 상황으로 다시 시작 🔄"):
         st.session_state.step = 0
         available = [k for k in scenarios.keys() if k != st.session_state.scenario]
         st.session_state.scenario = random.choice(available or list(scenarios.keys()))
         st.session_state.force_arrow_fixed = None
-        st.rerun() # ⬅️ 수정됨
+        st.session_state.result_message = "" # 메시지 초기화
+        st.rerun() # st.rerun() 적용
