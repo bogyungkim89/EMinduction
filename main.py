@@ -177,9 +177,9 @@ def get_scene_html(motion, pole, animate=True):
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     }}
     /* New CSS rule to force visibility of fixed arrow */
-    .force-arrow-preview.fixed-arrow-visible {
-        opacity: 1 !important; /* Override hover effect */
-    }
+    .force-arrow-preview.fixed-arrow-visible {{
+        opacity: 1 !important; 
+    }}
     </style>
     """
     return html
@@ -272,9 +272,9 @@ elif st.session_state.step == 1:
                 border: 2px solid #ef4444;
             }}
             /* New CSS rule to force visibility of fixed arrow */
-            .force-arrow-preview.fixed-arrow-visible {
+            .force-arrow-preview.fixed-arrow-visible {{
                 opacity: 1 !important; /* Override any other opacity settings */
-            }
+            }}
         </style>
         
         <script>
@@ -396,8 +396,6 @@ elif st.session_state.step == 1:
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
-    
-    # st.session_state.force_arrow_fixed = None # NameError 방지를 위해 제거/주석 처리
     
     if scenario["motion"] == "down":
         top_pole = scenario["pole"]
