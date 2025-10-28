@@ -106,7 +106,9 @@ def get_scene_html(motion, pole, animate=True):
     force_arrow_color = "#E94C3D"
     
     # 코일 중심(130px)에 맞춰 화살표 위치 계산
-    force_x_pos = 125 
+    # 전체 컨테이너 너비 300px, 중심 150px
+    # 코일 중심 130px이므로, 절대 위치로 150px - (화살표 크기/2) = 125px
+    force_x_pos = 125  # 중심 정렬
     force_y_pos = 215
 
     up_opacity = 1 if st.session_state.step == 1 and st.session_state.force_arrow_fixed == 'Up' else 0
@@ -128,15 +130,15 @@ def get_scene_html(motion, pole, animate=True):
     </svg>
     """
     
-    # 자석 위치
-    magnet_left_position = 110 
+    # 자석 위치: 전체 컨테이너 중심(150px)에 자석 너비의 절반(40px)을 빼서 중앙 정렬
+    magnet_left_position = 110  # 150 - 40 = 110px
     
     html = f"""
     <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative; width: 300px; margin-left: auto; margin-right: auto;">
-    
+        
       {force_up_arrow_svg}
       {force_down_arrow_svg}
-    
+        
       <div style="position:relative; width:300px; height:160px; display:flex; justify-content:center;">
         <div style="
             width:80px; height:160px;
@@ -185,7 +187,7 @@ if st.session_state.step == 0:
     
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
     
-    if st.button("다음 ➡️"):
+    if st.button("퀴즈 시작하기 ➡️"):
         st.session_state.step = 1
         st.session_state.quiz1_result = None
         st.session_state.force_arrow_fixed = None
@@ -202,7 +204,7 @@ elif st.session_state.step == 1:
     
     quiz1_full_html = f"""
     <div id="quiz1-interactive-container" style="display:flex; flex-direction:column; align-items:center;">
-    
+        
         <div id="quiz1-buttons" style="display:flex; justify-content: center; width:100%; max-width: 500px; margin: 1rem 0;">
             <div id="up-choice" class="quiz-choice-wrapper" style="width: 45%; margin-right: 10%;">
                 <button type="button" class="quiz-button" data-choice="Up">
@@ -280,7 +282,7 @@ elif st.session_state.step == 1:
             document.querySelectorAll('.quiz-button').forEach(btn => btn.classList.remove('is-active'));
             buttonElement.classList.add('is-active');
             
-            // Streamlit 상태에 저장 (이것이 Python 코드의 selected_choice를 업데이트하고 리런을 유발함)
+            // Streamlit 상태에 저장
             window.parent.postMessage({{
                 type: 'streamlit:setComponentValue',
                 value: choice
@@ -319,67 +321,37 @@ elif st.session_state.step == 1:
     """
     
     # HTML 컴포넌트로부터 선택값 받기
-    # key를 제거하여 불필요한 변경 방지
     selected_choice = st.components.v1.html(quiz1_full_html, height=620)
     
-    # 선택값이 None이 아니고, 현재 세션 상태와 다를 경우 업데이트 및 리런
-    if selected_choice is not None and selected_choice != st.session_state.force_arrow_fixed:
+    # 선택값이 있으면 세션에 저장
+    if selected_choice and selected_choice != st.session_state.force_arrow_fixed:
         st.session_state.force_arrow_fixed = selected_choice
         st.rerun()
-
-    # 다음 단계로 넘어가기 버튼 (선택된 값이 있어야 활성화)
-    st.markdown("---")
     
-    if st.session_state.force_arrow_fixed is not None:
-        
-        # 렌츠의 법칙에 따른 정답 힘의 방향 계산:
-        # 1. 가까워짐 ('down'): 자석의 움직임을 '방해'하기 위해 밀어냄 -> 힘은 'Up'
-        # 2. 멀어짐 ('up'): 자석의 움직임을 '방해'하기 위해 끌어당김 -> 힘은 'Down'
-        if scenario['motion'] == 'down': 
-            correct_force_direction = 'Up'
-        else:
-            correct_force_direction = 'Down'
-            
-        quiz1_correct = (st.session_state.force_arrow_fixed == correct_force_direction)
-
-        if st.button("다음 ➡️"):
-        st.session_state.step = 1
-        st.session_state.quiz1_result = None
-        st.session_state.force_arrow_fixed = None
-        st.query_params.clear()
+    # 다음 단계로 넘어가기 버튼
+    st.markdown("---")
+    if st.button("다음으로 넘어가기 ⏭️"):
+        st.session_state.step = 2
         st.rerun()
-
-        if st.button("정답 확인 및 다음 단계 ⏭️"):
-            if quiz1_correct:
-                # 정답일 경우 퀴즈 2로 이동
-                st.session_state.step = 2
-                st.success("✅ 정답입니다! 렌츠의 법칙에 따라 자속 변화를 **'방해'하는 방향**으로 자기력이 작용합니다.")
-            else:
-                st.error(f"❌ 오답이에요. 렌츠의 법칙에 따르면 코일은 자석의 움직임을 **{'밀어내야' if scenario['motion'] == 'down' else '끌어당겨야'}** 합니다. 정답은 **{correct_force_direction}**입니다.")
-            
-            # 정답/오답을 알려준 후 다음 단계로 넘어가도록 한 번 더 리런
-            st.session_state.quiz1_result = quiz1_correct
-            st.rerun()
 
 elif st.session_state.step == 2:
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
     
-    # 퀴즈 1 결과에 따른 코일 윗면 자극 계산
+    st.session_state.force_arrow_fixed = None
+    
     if scenario["motion"] == "down":
-        # 가까워짐 -> 척력 발생 -> 같은 극이 유도됨
         top_pole = scenario["pole"]
-        explanation = f"자석의 **{scenario['pole']}극**이 가까워지므로, 코일 윗면은 **밀어내기 위해** 같은 극인 **{top_pole}극**이 됩니다."
+        explanation = f"자석의 {scenario['pole']}극이 가까워지므로, 코일 윗면은 **밀어내기 위해** 같은 극인 {top_pole}극이 됩니다."
     else:
-        # 멀어짐 -> 인력 발생 -> 반대 극이 유도됨
         top_pole = "S" if scenario["pole"] == "N" else "N"
-        explanation = f"자석의 **{scenario['pole']}극**이 멀어지므로, 코일 윗면은 **끌어당기기 위해** 반대 극인 **{top_pole}극**이 됩니다."
+        explanation = f"자석의 {scenario['pole']}극이 멀어지므로, 코일 윗면은 **끌어당기기 위해** 반대 극인 {top_pole}극이 됩니다."
 
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
 
     options = ["윗면이 N극", "윗면이 S극"]
-    answer2 = st.radio("코일의 윗면 자극을 선택하세요", options, key='quiz2_radio')
+    answer2 = st.radio("코일의 윗면 자극을 선택하세요", options)
     
-    if st.button("정답 확인 및 다음 단계 ➡️", key='quiz2_button'):
+    if st.button("정답 확인 및 다음 단계 ➡️"):
         if answer2 == f"윗면이 {top_pole}극":
             st.session_state.step = 3
             st.success("✅ 정답입니다! 이 유도 자극이 바로 퀴즈 ①의 자기력을 만들어냅니다.")
@@ -391,21 +363,18 @@ elif st.session_state.step == 2:
 elif st.session_state.step == 3:
     st.subheader("퀴즈 ③: 코일에 유도되는 전류 방향")
     
-    # 퀴즈 2 결과에 따른 전류 방향 계산
     if (scenario["motion"] == "down" and scenario["pole"] == "N") or (scenario["motion"] == "up" and scenario["pole"] == "S"):
-        # 윗면이 N극 유도 (N극이 가까워짐 or S극이 멀어짐) -> 오른손 법칙 적용 시 반시계
         current = "반시계방향"
     else:
-        # 윗면이 S극 유도 (S극이 가까워짐 or N극이 멀어짐) -> 오른손 법칙 적용 시 시계
         current = "시계방향"
         
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
-    
+        
     st.warning("💡 오른손 법칙: 유도된 자극(퀴즈 ② 결과)을 오른손 엄지손가락으로 가리키고 코일을 감싸쥐면, 네 손가락 방향이 전류의 방향입니다.")
     options = ["시계방향", "반시계방향"]
-    answer3 = st.radio("전류의 방향을 선택하세요", options, key='quiz3_radio')
+    answer3 = st.radio("전류의 방향을 선택하세요", options)
     
-    if st.button("결과 보기 🎯", key='quiz3_button'):
+    if st.button("결과 보기 🎯"):
         if answer3 == current:
             st.session_state.step = 4
             st.success("✅ 최종 정답입니다! 모든 단계를 정확히 이해했어요. 전자기 유도 현상을 완벽히 이해했네요 🎉")
