@@ -330,7 +330,7 @@ elif st.session_state.step == 1:
     
     # 다음 단계로 넘어가기 버튼
     st.markdown("---")
-    if st.button("다음으로 넘어가기 ⏭️"):
+    if st.button("다음 ⏭️"):
         st.session_state.step = 2
         st.rerun()
 
