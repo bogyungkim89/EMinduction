@@ -25,7 +25,6 @@ scenario = scenarios[st.session_state.scenario]
 
 def draw_scene(motion, pole, animate=True):
     pole_color = "red" if pole == "N" else "blue"
-    arrow_symbol = "↓" if motion == "down" else "↑"
     move_dir = "80px" if motion == "down" else "-80px"
 
     anim = f"""
@@ -39,20 +38,17 @@ def draw_scene(motion, pole, animate=True):
     html = f"""
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px;">
       
-      <!-- 자석 + 화살표 -->
+      <!-- 자석 -->
       <div style="display:flex; align-items:center; justify-content:center; position:relative; top:0;">
-        <!-- 자석 -->
-        <div style="width:80px; height:160px; background:#888; border:4px solid #222;
+        <div style="width:80px; height:160px; background:#bbb; border:4px solid #222;
                     display:flex; align-items:end; justify-content:center;
                     position:relative; animation:{'moveOnce 2s ease-out forwards' if animate else 'none'};">
-            <div style="font-size:28px; font-weight:bold; color:{pole_color}; margin-bottom:6px;">{pole}</div>
+            <div style="font-size:56px; font-weight:bold; color:{pole_color}; margin-bottom:8px;">{pole}</div>
         </div>
-        <!-- 방향 화살표 -->
-        <div style="font-size:48px; color:#222; margin-left:25px;">{arrow_symbol}</div>
       </div>
 
       <!-- 코일 (정중앙, 원통형) -->
-      <svg width="260" height="240" viewBox="0 0 260 240" style="margin-top:0;">
+      <svg width="260" height="240" viewBox="0 0 260 240" style="margin-top:-20px;">
         <!-- 윗면 -->
         <ellipse cx="130" cy="130" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
         <!-- 측면 -->
