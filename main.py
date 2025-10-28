@@ -24,9 +24,14 @@ if "quiz1_result" not in st.session_state:
     st.session_state.quiz1_result = None
 if "force_arrow_fixed" not in st.session_state:
     st.session_state.force_arrow_fixed = None
-# 퀴즈 1단계 선택을 저장할 상태 추가
 if "quiz1_choice" not in st.session_state:
     st.session_state.quiz1_choice = None
+# 퀴즈 2 선택 결과를 저장할 상태 추가
+if "quiz2_choice" not in st.session_state:
+    st.session_state.quiz2_choice = None
+# 퀴즈 2 정답 여부 피드백을 저장할 상태 추가
+if "quiz2_feedback" not in st.session_state:
+    st.session_state.quiz2_feedback = None
 
 
 scenario = scenarios[st.session_state.scenario]
@@ -35,7 +40,6 @@ scenario = scenarios[st.session_state.scenario]
 def get_scene_html(motion, pole, animate=True):
     """
     자석의 움직임과 극성을 시각화하는 HTML/CSS 코드를 생성하여 반환합니다.
-    (간결화를 위해 일부 상세 코드는 생략되었습니다. 기능은 유지됩니다.)
     """
     pole_color = "red" if pole == "N" else "blue"
     move_dir = "80px" if motion == "down" else "-80px"
@@ -139,11 +143,64 @@ def get_scene_html(motion, pole, animate=True):
     
     magnet_left_position = 110 
     
+    # --- 퀴즈 2 (Step 2)를 위한 N/S 선택 버튼 추가 ---
+    quiz2_buttons_html = ""
+    # 유일한 URL 매개변수 생성 (Streamlit의 쿼리 파라미터는 자동으로 초기화되므로, 선택 결과를 Streamlit 세션 상태로 전달하기 위한 트릭)
+    unique_id = str(uuid.uuid4())
+    
+    if st.session_state.step == 2:
+        
+        # 콜백 함수 이름 (Streamlit의 Custom Component가 아닌 HTML/JS를 통해 Streamlit 상태를 변경하는 일반적인 트릭)
+        # 1. 쿼리 파라미터를 변경한다. 2. Streamlit이 재실행된다. 3. 파라미터를 읽어 콜백 로직을 실행한다.
+        # 실제로는 st.query_params를 사용하지 않고, st.session_state를 직접 변경하는 Streamlit 버튼을 사용하는 것이 좋으나,
+        # '원통 상단에 겹쳐지게'라는 요구사항 때문에 HTML 버튼을 사용하고, 쿼리 파라미터 트릭을 다시 도입해야 함.
+        # Streamlit Native 버튼을 사용하려면 위치 제약이 있음.
+
+        # Streamlit 쿼리 파라미터 트릭을 이용하는 버튼
+        # 버튼을 클릭하면 'quiz2_choice=N' 등의 쿼리가 추가되어 Streamlit이 재실행됨
+        button_style = """
+            width: 50px; height: 35px; border-radius: 5px; 
+            font-size: 18px; font-weight: bold; cursor: pointer;
+            position: absolute; top: 120px; z-index: 50; 
+            border: 2px solid; transition: all 0.1s;
+        """
+        
+        # 코일 상단 중심 위치: 130px (중심)
+        # N극 버튼 (왼쪽)
+        n_button_style = f"{button_style} left: 100px; background-color: #ffcccc; color: red; border-color: red;"
+        # S극 버튼 (오른쪽)
+        s_button_style = f"{button_style} left: 155px; background-color: #ccccff; color: blue; border-color: blue;"
+        
+        # 선택된 버튼의 스타일 업데이트
+        if st.session_state.quiz2_choice == 'N':
+             n_button_style += " box-shadow: 0 0 0 3px #ff0000; background-color: #ffaaaa;"
+        elif st.session_state.quiz2_choice == 'S':
+             s_button_style += " box-shadow: 0 0 0 3px #0000ff; background-color: #aaaaff;"
+             
+        # 버튼 HTML: form을 사용하지 않고 window.location.href를 사용해 쿼리 파라미터를 직접 변경
+        quiz2_buttons_html = f"""
+            <div id="quiz2-choice-buttons" style="position: absolute; width: 300px; height: 160px; pointer-events: none;">
+                <button type="button" 
+                    onclick="window.location.href = '?choice2=N'"
+                    style="{n_button_style} pointer-events: auto;">
+                    N
+                </button>
+                <button type="button" 
+                    onclick="window.location.href = '?choice2=S'"
+                    style="{s_button_style} pointer-events: auto;">
+                    S
+                </button>
+            </div>
+        """
+
+    
     html = f"""
     <div id="scene-visualization" style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px; position:relative; width: 300px; margin-left: auto; margin-right: auto;">
         
       {force_up_arrow_svg}
       {force_down_arrow_svg}
+        
+      {quiz2_buttons_html} 
         
       <div style="position:relative; width:300px; height:160px; display:flex; justify-content:center;">
         <div style="
@@ -193,21 +250,32 @@ def get_scene_html(motion, pole, animate=True):
 
 def handle_quiz1_choice(choice):
     """퀴즈 1 선택을 처리하고 다음 단계로 이동합니다."""
-    # 퀴즈 1 선택을 세션 상태에 저장하여 시각화에 반영
     st.session_state.quiz1_choice = choice
-    # 퀴즈 2로 넘어가서도 고정 화살표를 표시하기 위해 force_arrow_fixed에도 저장
     st.session_state.force_arrow_fixed = choice
-    # 다음 단계(퀴즈 2)로 이동
     st.session_state.step = 2
+    # 퀴즈 2 초기화
+    st.session_state.quiz2_choice = None 
+    st.session_state.quiz2_feedback = None 
 
-def handle_quiz2_check(answer2, top_pole, explanation):
-    """퀴즈 2 선택을 처리하고 다음 단계로 이동 또는 오류 메시지를 표시합니다."""
-    if answer2 == f"윗면이 {top_pole}극":
-        st.session_state.step = 3
-        st.success("✅ 정답입니다! 이 유도 자극이 바로 퀴즈 ①의 자기력을 만들어냅니다.")
+def check_quiz2_answer(chosen_pole):
+    """퀴즈 2 선택 결과를 확인하고 피드백을 저장합니다."""
+    st.session_state.quiz2_choice = chosen_pole
+    
+    if scenario["motion"] == "down":
+        # 가까워짐 -> 밀어내야 함 -> 같은 극
+        correct_pole = scenario["pole"]
     else:
-        st.error(f"❌ 오답이에요. 렌츠의 법칙에 따라 유도된 자극은 **{top_pole}극**이 되어야 합니다.")
-        st.info(explanation)
+        # 멀어짐 -> 끌어당겨야 함 -> 반대 극
+        correct_pole = "S" if scenario["pole"] == "N" else "N"
+
+    if chosen_pole == correct_pole:
+        st.session_state.quiz2_feedback = "correct"
+    else:
+        st.session_state.quiz2_feedback = "wrong"
+    
+    # 정답 여부와 관계없이 재실행하여 피드백을 표시
+    st.rerun()
+
 
 def handle_quiz3_check(answer3, current):
     """퀴즈 3 선택을 처리하고 다음 단계로 이동 또는 오류 메시지를 표시합니다."""
@@ -216,11 +284,20 @@ def handle_quiz3_check(answer3, current):
         st.success("✅ 최종 정답입니다! 모든 단계를 정확히 이해했어요. 전자기 유도 현상을 완벽히 이해했네요 🎉")
     else:
         st.error(f"❌ 오답이에요. 퀴즈 ②의 결과에 오른손 법칙을 적용해 보세요. 정답은 **{current}**입니다.")
+    st.rerun()
 
 
 # ---
 # 단계별 학습 진행
 # ---
+
+# 쿼리 파라미터 처리 (퀴즈 2 HTML 버튼 클릭 결과)
+if st.session_state.step == 2 and "choice2" in st.query_params:
+    chosen_pole = st.query_params["choice2"]
+    # 쿼리 파라미터를 정리하여 무한 루프 방지
+    st.query_params.clear() 
+    check_quiz2_answer(chosen_pole)
+
 
 if st.session_state.step == 0:
     st.subheader("🎬 상황 관찰하기")
@@ -233,7 +310,9 @@ if st.session_state.step == 0:
         st.session_state.step = 1
         st.session_state.quiz1_result = None
         st.session_state.force_arrow_fixed = None
-        st.session_state.quiz1_choice = None # 초기화
+        st.session_state.quiz1_choice = None 
+        st.session_state.quiz2_choice = None
+        st.session_state.quiz2_feedback = None
         st.rerun()
 
 elif st.session_state.step == 1:
@@ -243,10 +322,8 @@ elif st.session_state.step == 1:
     st.warning("💡 **렌츠의 법칙**: 자속 변화를 **'방해'**하는 방향으로 유도 자기장이 형성됩니다.")
     st.markdown("**코일이 자석에 가하는 힘의 방향을 선택하세요:**")
     
-    # 퀴즈 1 시각화
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
 
-    # Streamlit 네이티브 버튼으로 변경 (선택 시 handle_quiz1_choice 콜백 함수 실행)
     col1, col2 = st.columns(2)
     with col1:
         st.button("⬆️ 위쪽 힘 (방해)", 
@@ -265,7 +342,7 @@ elif st.session_state.step == 2:
     
     st.subheader("퀴즈 ②: 코일의 윗면 자극은?")
     
-    # 퀴즈 1 정답 확인 및 피드백 (optional, but good for learning)
+    # 퀴즈 1 피드백
     correct_dir = "Up" if scenario["motion"] == "down" else "Down"
     chosen_dir = st.session_state.force_arrow_fixed
     
@@ -282,26 +359,39 @@ elif st.session_state.step == 2:
         top_pole = "S" if scenario["pole"] == "N" else "N"
         explanation = f"자석의 **{scenario['pole']}극**이 멀어지므로, 코일 윗면은 **끌어당기기 위해** 반대 극인 **{top_pole}극**이 됩니다."
 
-    # 퀴즈 2 시각화
+    st.markdown("**코일 윗면에 유도되는 자극을 원통 이미지 위에서 선택하세요:**")
+    
+    # 퀴즈 2 시각화 (N/S 선택 버튼 포함)
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
+    
+    # 정답 피드백 표시
+    if st.session_state.quiz2_feedback == "correct":
+        st.success("✅ 정답입니다! 이 유도 자극이 바로 퀴즈 ①의 자기력을 만들어냅니다.")
+        st.session_state.quiz2_result_check = True # 다음 단계로 넘어갈 수 있는 상태 표시
+    elif st.session_state.quiz2_feedback == "wrong":
+        st.error(f"❌ 오답이에요. 렌츠의 법칙에 따라 유도된 자극은 **{top_pole}극**이 되어야 합니다.")
+        st.info(explanation)
+        st.session_state.quiz2_result_check = False # 다음 단계로 넘어갈 수 없는 상태 표시
+    else:
+        st.session_state.quiz2_result_check = False
+        st.info("⬆️ 코일 윗면에 유도되는 극을 선택해 보세요.")
 
-    options = ["윗면이 N극", "윗면이 S극"]
-    answer2 = st.radio("코일의 윗면 자극을 선택하세요", options, key="radio_quiz2")
-    
-    # 콜백 함수 사용
-    st.button("정답 확인 및 다음 단계 ➡️", 
-              on_click=handle_quiz2_check, 
-              args=(answer2, top_pole, explanation), 
-              key="btn_check_quiz2")
-    
+    # 정답을 맞힌 경우에만 다음 단계 버튼 표시
+    if st.session_state.quiz2_feedback == "correct":
+        if st.button("다음 단계 ➡️", key="btn_next_quiz2"):
+             st.session_state.step = 3
+             st.rerun()
+
 elif st.session_state.step == 3:
     st.subheader("퀴즈 ③: 코일에 유도되는 전류 방향")
     
+    # 퀴즈 2에서 유도된 자극 (top_pole) 계산 (재연산 필요)
     if scenario["motion"] == "down":
         top_pole = scenario["pole"]
     else:
         top_pole = "S" if scenario["pole"] == "N" else "N"
         
+    # 오른손 법칙 적용
     if top_pole == "N":
         current = "반시계방향"
     else: # top_pole == "S"
@@ -315,7 +405,6 @@ elif st.session_state.step == 3:
     options = ["시계방향", "반시계방향"]
     answer3 = st.radio("전류의 방향을 선택하세요 (코일 위에서 바라본 방향)", options, key="radio_quiz3")
     
-    # 콜백 함수 사용
     st.button("결과 보기 🎯", 
               on_click=handle_quiz3_check, 
               args=(answer3, current), 
@@ -338,4 +427,6 @@ elif st.session_state.step == 4:
         st.session_state.quiz1_result = None
         st.session_state.force_arrow_fixed = None
         st.session_state.quiz1_choice = None
+        st.session_state.quiz2_choice = None
+        st.session_state.quiz2_feedback = None
         st.rerun()
