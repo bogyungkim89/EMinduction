@@ -187,7 +187,7 @@ if st.session_state.step == 0:
     
     st.components.v1.html(get_scene_html(scenario["motion"], scenario["pole"], animate=True), height=520)
     
-    if st.button("퀴즈 시작하기 ➡️"):
+    if st.button("다음 ➡️"):
         st.session_state.step = 1
         st.session_state.quiz1_result = None
         st.session_state.force_arrow_fixed = None
