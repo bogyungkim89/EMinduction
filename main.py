@@ -4,7 +4,7 @@ import random
 st.set_page_config(page_title="전자기 유도 학습", layout="centered")
 
 st.title("🧲 전자기 유도 학습 앱")
-st.markdown("### 자석이 코일 중심 위에서 움직일 때의 변화를 관찰하세요!")
+st.markdown("### 자석이 코일 중심 위에서 반복적으로 움직이는 모습을 관찰하세요!")
 
 # 시나리오 정의
 scenarios = {
@@ -28,10 +28,11 @@ def draw_scene(motion, pole, animate=True):
     move_dir = "80px" if motion == "down" else "-80px"
 
     anim = f"""
-    @keyframes moveOnce {{
+    @keyframes floatMove {{
         0%   {{ transform: translateY(0); }}
-        80%  {{ transform: translateY({move_dir}); }}
-        100% {{ transform: translateY({move_dir}); }}
+        50%  {{ transform: translateY({move_dir}); }}
+        51%  {{ transform: translateY(0); }}
+        100% {{ transform: translateY(0); }}
     }}
     """
 
@@ -40,10 +41,13 @@ def draw_scene(motion, pole, animate=True):
       
       <!-- 자석 -->
       <div style="display:flex; align-items:center; justify-content:center; position:relative; top:0;">
-        <div style="width:80px; height:160px; background:#bbb; border:4px solid #222;
-                    display:flex; align-items:end; justify-content:center;
-                    position:relative; animation:{'moveOnce 2s ease-out forwards' if animate else 'none'};">
-            <div style="font-size:56px; font-weight:bold; color:{pole_color}; margin-bottom:8px;">{pole}</div>
+        <div style="
+            width:80px; height:160px;
+            background:#bbb; border:4px solid #222;
+            display:flex; align-items:flex-end; justify-content:center;
+            position:relative;
+            animation:{'floatMove 3s ease-in-out infinite' if animate else 'none'};">
+            <div style="font-size:56px; font-weight:bold; color:{pole_color}; margin-bottom:2px;">{pole}</div>
         </div>
       </div>
 
