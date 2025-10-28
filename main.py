@@ -12,10 +12,10 @@ st.markdown("### 자석이 코일 중심 위에서 반복적으로 움직이는 
 # 3: N극이 멀어짐 (up, N)
 # 4: S극이 멀어짐 (up, S)
 scenarios = {
-    1: {"desc": "N극이 코일에 가까워지는 경우", "motion": "down", "pole": "N"},
-    2: {"desc": "S극이 코일에 가까워지는 경우", "motion": "down", "pole": "S"},
-    3: {"desc": "N극이 코일에서 멀어지는 경우", "motion": "up", "pole": "N"},
-    4: {"desc": "S극이 코일에서 멀어지는 경우", "motion": "up", "pole": "S"},
+    1: {"desc": "N극이 가까워지는 경우", "motion": "down", "pole": "N"},
+    2: {"desc": "S극이 가까워지는 경우", "motion": "down", "pole": "S"},
+    3: {"desc": "N극이 멀어지는 경우", "motion": "up", "pole": "N"},
+    4: {"desc": "S극이 멀어지는 경우", "motion": "up", "pole": "S"},
 }
 
 # 상태 초기화
@@ -75,9 +75,6 @@ def draw_scene(motion, pole, animate=True):
     
     # =================================================================
     # 코일 감은 선 (시계방향 헬릭스 Path) 생성
-    # - 원통 앞면 (보이는 부분)만 그립니다.
-    # - 원통 왼쪽 세로선을 따라 내려오는 전선은 그리지 않습니다.
-    # - 외부 연결선은 수평 직선으로 변경되었습니다.
     # -----------------------------------------------------------------
     
     # 코일 몸통 Y 좌표 설정: 높이 180px
@@ -86,12 +83,10 @@ def draw_scene(motion, pole, animate=True):
     coil_bottom_y = coil_top_y + coil_height # 310 (코일 아랫면 중심 Y 좌표)
     
     # 전선 감기 시작 및 종료 Y 좌표 (코일 윗면/아랫면 타원 위/아래에서 시작/종료)
-    wire_start_y = coil_top_y + 10  # 윗면 타원 아래에서 시작 (130 + 10)
-    # 아래쪽 전선 Y 좌표를 간격의 절반만큼 위로 이동
-    original_exit_y = coil_bottom_y - 10 # 원래 종료 Y 좌표 (300)
-    wire_gap = original_exit_y - wire_start_y # 300 - 140 = 160
-    move_up_distance = wire_gap / 2 # 160 / 2 = 80
-    wire_end_y = original_exit_y - move_up_distance # 300 - 80 = 220
+    wire_start_y = coil_top_y + 10  # 윗면 타원 아래에서 시작 (130 + 10 = 140)
+    
+    # 아래쪽 전선 Y 좌표를 원래 위치로 복원합니다. (310 - 10 = 300)
+    wire_end_y = coil_bottom_y - 10 
     
     # 전선 감긴 횟수 변경: 7턴
     num_turns = 7
@@ -104,9 +99,8 @@ def draw_scene(motion, pole, animate=True):
     # 전선 길이를 2.5배로 늘리고 X 좌표 업데이트 (원래 길이 30 * 2.5 = 75)
     exit_x_end = start_x + 75 # 210 + 75 = 285
 
-    # 1. 오른쪽 전선 진입 (수평 직선으로 변경)
+    # 1. 오른쪽 전선 진입 (수평 직선)
     # ({exit_x_end}, wire_start_y)에서 시작하여 {start_x, wire_start_y}로 수평 직선 연결
-    # Z-index를 위해 한 번 꺾어서 처리
     external_wire_in = f"M {exit_x_end} {wire_start_y} L {start_x} {wire_start_y}"
     
     winding_front_segments = []
@@ -131,8 +125,8 @@ def draw_scene(motion, pole, animate=True):
 
     winding_path_d = " ".join(winding_front_segments)
 
-    # 2. 오른쪽 전선 빠져나감 (수평 직선으로 변경)
-    exit_y_coil = wire_end_y # 위에서 계산된 새로운 Y 좌표 사용
+    # 2. 오른쪽 전선 빠져나감 (수평 직선)
+    exit_y_coil = wire_end_y # 원래 위치로 복원된 Y 좌표 사용
     # (start_x, exit_y_coil)에서 시작하여 {exit_x_end, exit_y_coil}로 수평 직선 연결
     external_wire_out = f"M {start_x} {exit_y_coil} L {exit_x_end} {exit_y_coil}" 
     
@@ -145,7 +139,7 @@ def draw_scene(motion, pole, animate=True):
     # =================================================================
     
     # 자석의 색깔, 극성, 애니메이션을 포함한 HTML 구조
-    # SVG 높이와 뷰박스 조정 (최대 Y 고려하여 400으로 유지)
+    # SVG 높이와 뷰박스 조정 (늘어난 전선 길이 수용을 위해 너비 300 유지)
     html = f"""
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-top:10px;">
         
@@ -168,7 +162,7 @@ def draw_scene(motion, pole, animate=True):
             {arrow_svg if animate else ''} <!-- 애니메이션 활성화 시에만 화살표 표시 --></div>
       </div>
 
-      <!-- 코일 (SVG를 사용하여 입체적으로 표현) - 높이 400으로 증가, 너비 300으로 증가 --><svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
+      <!-- 코일 (SVG를 사용하여 입체적으로 표현) - 너비 300 유지 --><svg width="300" height="400" viewBox="0 0 300 400" style="margin-top:-20px;">
         <!-- 1. 코일 몸통 사각형 (배경) - 높이 180px (Y: 130~310) --><rect x="50" y="{coil_top_y}" width="160" height="{coil_height}" fill="#ffe7a8" stroke="#b97a00" stroke-width="2"/>
         <!-- 2. 코일 아랫면 타원 (밑면) - Y=310 --><ellipse cx="130" cy="{coil_bottom_y}" rx="80" ry="22" fill="#ffdf91" stroke="#b97a00" stroke-width="2"/>
         
