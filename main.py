@@ -81,11 +81,11 @@ def get_scene_html(motion, pole, animate=True):
     
     # 코일 몸통 Y 좌표 설정: 높이 180px
     coil_height = 180
-    coil_top_y = 130 # 코일 윗면 중심 Y 좌표
-    coil_bottom_y = coil_top_y + coil_height # 310 (코일 아랫면 중심 Y 좌표)
+    coil_top_y_svg = 130 # 코일 윗면 중심 Y 좌표
+    coil_bottom_y = coil_top_y_svg + coil_height # 310 (코일 아랫면 중심 Y 좌표)
     
     # 전선 감기 시작 Y 좌표 (위쪽 외부 전선 Y 좌표)
-    wire_start_y = coil_top_y + 10  # 140
+    wire_start_y = coil_top_y_svg + 10  # 140
     
     # 코일 내부 와인딩 종료 Y 좌표 (300)
     wire_end_y = coil_bottom_y - 10 
@@ -143,20 +143,25 @@ def get_scene_html(motion, pole, animate=True):
     """
     # =================================================================
 
-    # --- 수정된 부분: 유도력 화살표 크기, 두께, 위치 조정 ---
-    force_arrow_size = 150 # 3x larger size
-    force_arrow_stroke_width = 6 # 2x thicker stroke
-    coil_top_y_svg = 130 # 코일 윗면 SVG Y 좌표
+    # --- 수정된 부분: 유도력 화살표 크기, 두께, 위치, Z-Index 조정 ---
     
-    # 화살표 SVG를 coil_top_y를 기준으로 수직 중앙에 배치 (130 - 150/2 = 55)
-    force_y_pos = coil_top_y_svg - (force_arrow_size / 2)
-
+    # 원래 크기/두께로 복원
+    force_arrow_size = 50 
+    force_arrow_stroke_width = 3 
+    
     force_arrow_color = "#E94C3D" 
 
+    # X 위치: 코일 중심 (130)에 화살표 중심 (25)이 오도록 (130 - 25 = 105)
+    force_x_pos = 105
+    
+    # Y 위치: 코일 윗면 (130)에 화살표 아랫부분이 오도록 (130 - 50 = 80)
+    force_y_pos = coil_top_y_svg - force_arrow_size 
+
     # Upward force arrow (Hidden by default, ID for JS targeting)
+    # z-index: 10으로 설정하여 자석보다 앞에 나타나도록 함
     force_up_arrow_svg = f"""
     <svg id="force-up" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-         style="position:absolute; left:calc(50% - {force_arrow_size/2}px); top: {force_y_pos}px; opacity:0; pointer-events: none; transition: opacity 0.1s;">
+         style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="19" x2="12" y2="5"></line>
         <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
@@ -164,7 +169,7 @@ def get_scene_html(motion, pole, animate=True):
     # Downward force arrow (Hidden by default, ID for JS targeting)
     force_down_arrow_svg = f"""
     <svg id="force-down" class="force-arrow-preview" width="{force_arrow_size}" height="{force_arrow_size}" viewBox="0 0 24 24" fill="none" stroke="{force_arrow_color}" stroke-width="{force_arrow_stroke_width}" stroke-linecap="round" stroke-linejoin="round"
-         style="position:absolute; left:calc(50% - {force_arrow_size/2}px); top: {force_y_pos}px; opacity:0; pointer-events: none; transition: opacity 0.1s;">
+         style="position:absolute; left: {force_x_pos}px; top: {force_y_pos}px; z-index: 10; opacity:0; pointer-events: none; transition: opacity 0.1s;">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <polyline points="5 12 12 19 19 12"></polyline>
     </svg>
