@@ -143,7 +143,7 @@ def get_scene_html(motion, pole, animate=True):
     """
     # =================================================================
 
-    # --- 수정된 부분: 유도력 화살표 위치를 50px 아래 (140 -> 190)로 조정 ---
+    # --- 수정된 부분: 유도력 화살표 위치를 25px 아래 (190 -> 215)로 조정 ---
     
     # 원래 크기/두께로 복원
     force_arrow_size = 50 
@@ -154,8 +154,8 @@ def get_scene_html(motion, pole, animate=True):
     # X 위치: 코일 중심 (130)에 화살표 중심 (25)이 오도록 (130 - 25 = 105)
     force_x_pos = 105
     
-    # Y 위치: 코일의 원통 그림 윗부분 (Y=130부터 시작)에 겹치도록 190으로 설정 (140 + 50)
-    force_y_pos = 190 
+    # Y 위치: 215px로 조정 (이전 190px + 25px)
+    force_y_pos = 215 
 
     # Upward force arrow (Hidden by default, ID for JS targeting)
     # z-index: 10으로 설정하여 자석과 코일보다 앞에 나타나도록 함
