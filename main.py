@@ -204,7 +204,7 @@ def get_scene_html(motion, pole, animate=True):
         </div>
       </div>
 
-      {/* --- 고리 (도선) SVG 전체 삭제됨 --- */}
+      <!-- --- 고리 (도선) SVG 전체 삭제됨 --- -->
       
     </div>
 
