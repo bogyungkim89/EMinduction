@@ -182,7 +182,7 @@ def get_scene_html(motion, pole, animate=True):
         
       <div style="position:relative; width:300px; height:160px; display:flex; justify-content:center;">
         
-        {/* --- 원통 배경 및 테두리 삭제, 자석 극성 텍스트만 유지 --- */}
+        <!-- --- 원통 배경 및 테두리 삭제, 자석 극성 텍스트만 유지 --- -->
         <div style="
             width:80px; height:160px;
             display:flex; align-items:flex-end; justify-content:center;
